@@ -42,25 +42,30 @@ out uniquely, and only CAGE does.
 ### 1. Keep CAGE in the design loss
 Free, irreplaceable, and removing it costs the entire phenotype.
 
-### 2. Validate with RNA-seq + ATAC, calibrated against CAGE
-Element-level Pearson coupling is 0.942–0.998 for DNase and 0.974–0.999 for H3K4me3, but those
-coefficients are inflated by the dead-versus-working dynamic range. Rank correlation over the same
-arms is +0.73 to +0.83. Accessibility is therefore a **near-perfect detector of whether a promoter
-fired and a moderate predictor of how strongly**.
+### 2. Do not use ATAC/DNase as a CAGE surrogate. Ask what you actually need to verify.
 
-Two reasons to keep a little CAGE rather than none:
+An earlier version of this document recommended replacing CAGE with RNA-seq + ATAC in validation.
+**That was wrong** ([08](08-corrections.md) item 8). Among designs whose loss contained CAGE, the
+production case, CAGE and DNase correlate at Pearson −0.212 and Spearman −0.033. An ATAC-only screen
+would have called all three genes of arm B dead; arm B is the best design in this study.
 
-- **mScarlet is a real false negative.** In the lab's `final` design it has the highest CAGE of the
-  three genes (13.5) and background DNase (0.37). An ATAC-only screen would have called it dead.
-- **Across-design rank correlation is only 0.74–0.81**, and the discordance comes entirely from the
-  deliberately pathological arms (RNA-only, RNA+DNase, RNA+Pol II) that hit RNA targets with no
-  initiation. A pipeline that keeps CAGE in the loss should not generate those.
+The useful reframe is that the validation question was posed backwards. It is not "how do I measure
+CAGE cheaply", it is "which specification am I checking?"
 
-So: RNA-seq + ATAC for everything, with CAGE on two or three constructs to fix the relationship.
+| Specification | Direct measurement | Surrogate needed? |
+|---|---|---|
+| Three genes at relative levels 7 / 5 / 3 | **RNA-seq** | None. This is the direct measurement. |
+| Reporter protein output | **Flow cytometry** | None, and cheaper still, if protein-level is acceptable |
+| TSS at the designed base | **CAGE** | None found. Nothing substitutes. |
+| Locus looks like active chromatin | ATAC, H3K4me3 | Measures itself only. Do not infer CAGE from it. |
 
-One note for K562 specifically: **Borzoi has no ATAC track for K562** (232 ATAC tracks exist, none
-in K562; K562 has 4 CAGE, 7 DNase, 424 ChIP, 94 RNA). In-silico accessibility for K562 means DNase.
+RNA-seq is not a cheap stand-in for CAGE. It is the direct readout of the headline expression spec,
+and these are fluorescent reporters, so flow cytometry measures that spec more cheaply than either.
 
+CAGE is needed for exactly one claim: that initiation happens at the designed position. That is a
+real claim and the whole point of putting CAGE in the loss, but it is a claim you verify on a few
+representative constructs, not on every member of a library. The saving comes from that, not from
+finding a cheaper assay that reports the same thing.
 ### 3. Try CAGE + RNA + chromatin-fraction RNA
 The clearest gap in the current objective. Arm B (CAGE+RNA) overshoots CAGE 44.0 against the lab's
 26.9 while undershooting every chromatin mark by 3–6×. Arm E (RNA + chromatin RNA), with no CAGE at

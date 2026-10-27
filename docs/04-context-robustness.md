@@ -79,53 +79,82 @@ a distributed, cooperative system rather than three isolated promoters.
 
 This pushes back on the deck's attribution-map reading that the oracles are "essentially local".
 
-## Track coupling across the nine arms
+## Track coupling: can a chromatin assay stand in for CAGE?
 
-Correlating readouts across all nine perturbation arms (which span dead to fully working):
+**Short answer: no, and an earlier version of this analysis got this wrong.** The question has to be
+asked separately in three regimes, because the answer reverses between them.
+
+### Regime 1: perturbations of a single design
+
+Correlating readouts across the nine perturbation arms, all of which are `final`, the CDS-only
+control, or something built from them:
 
 | Gene | r(CAGE, DNase) | r(CAGE, H3K4me3) | r(CAGE, RNA) | r(CAGE, Ser5-P Pol2) |
 |---|---|---|---|---|
-| eGFP | **+0.998** | +0.999 | +0.997 | +0.971 |
-| mScarlet | **+0.994** | +0.984 | +0.633 | +0.586 |
-| RFP3 | **+0.942** | +0.974 | +0.993 | +0.971 |
+| eGFP | +0.998 | +0.999 | +0.997 | +0.971 |
+| mScarlet | +0.994 | +0.984 | +0.633 | +0.586 |
+| RFP3 | +0.942 | +0.974 | +0.993 | +0.971 |
 
-**Those are Pearson, and Pearson flatters them.** These arms span 0.067 to 5.6, so the dead-versus-working
-contrast dominates the coefficient. Rank correlation over the same data is markedly weaker:
+Those are Pearson, and Pearson flatters them: these arms span 0.065 to 5.6, so the dead-versus-working
+contrast carries the coefficient. Rank correlation is +0.73 to +0.83.
 
-| Gene | Spearman(CAGE, DNase) | Spearman(CAGE, H3K4me3) |
+This regime is real but narrow. It says: **if you take one working design and break its promoter,
+CAGE and accessibility collapse together.** That is a statement about promoter integrity within one
+sequence family.
+
+### Regime 2: across designs from different objectives
+
+| Comparison | Pearson | Spearman |
 |---|---|---|
-| eGFP | +0.733 | +0.983 |
-| mScarlet | +0.800 | +0.583 |
-| RFP3 | +0.833 | +0.833 |
+| CAGE vs DNase, 9 designs × 3 genes | **+0.218** | +0.795 |
+| CAGE vs RNA, same | +0.441 | +0.736 |
 
-So the honest statement is: **accessibility is a near-perfect detector of whether a promoter fired,
-and a moderate predictor of how strongly.** For screening ("did this construct work?") that is
-sufficient. For finely ranking two designs that both work, it is not, and CAGE calibration matters.
+### Regime 3: across designs whose loss contained CAGE (the production case)
 
-### The mScarlet false negative
-
-mScarlet is a concrete failure mode of the surrogate, not just an outlier:
-
-| Gene in `final` | CAGE | DNase |
+| Comparison | Pearson | Spearman |
 |---|---|---|
-| eGFP | 10.75 | 3.70 |
-| **mScarlet** | **13.51** (highest) | **0.37** (background) |
-| RFP3 | 8.75 | 5.65 |
+| CAGE vs DNase, 3 designs × 3 genes | **−0.212** | **−0.033** |
 
-mScarlet has the strongest CAGE of the three genes and essentially no accessibility signal. **An
-ATAC-only screen would have scored it a failure.**
+**No relationship at all.** This is the regime that matters for validating constructs from a working
+pipeline, and accessibility carries no information about CAGE in it.
 
-Worse, mScarlet's DNase spans only **0.066 to 0.372 across all nine arms**, against 0.065–3.70 for
-eGFP and 0.068–5.65 for RFP3. It never leaves background in any arm, dead or working. So its
-headline +0.994 Pearson is a correlation *within noise* and carries no practical information. The
-same is true of its H3K4me3 (0.98–1.81). For this gene, accessibility is simply not a usable
-readout at any level.
+### The counterexample that makes this concrete
 
-Why mScarlet behaves this way is unresolved and worth understanding, since it is the one gene whose
-designed promoter Borzoi considers strong but silent-looking by every chromatin measure.
+| Design | CAGE %target | DNase peak | H3K4me3 | Pol II |
+|---|---|---|---|---|
+| arm B, CAGE+RNA | **100.8%** | 0.408 | 5.02 | 6.94 |
+| arm E, RNA+chromatin RNA | **9.7%** | **2.774** | **15.62** | **19.49** |
 
-This is why the recommendation is RNA-seq + ATAC with CAGE run once on a few constructs to
-calibrate, rather than ATAC alone.
+Arm B hits its initiation target perfectly with almost no accessibility. Arm E has 7× the
+accessibility and fails initiation by 10×. The two are **anti**-correlated across the arms that
+matter most.
+
+### Scored as a screen
+
+Calling CAGE > 5 "works" and DNase > 1.0 "works", an ATAC-only screen disagrees with CAGE on
+**7 of 21** gene-design combinations, including **all three genes of arm B**, the best design in the
+study:
+
+| Design | Gene | CAGE | DNase | Disagreement |
+|---|---|---|---|---|
+| `final` | mScarlet | 13.51 works | 0.372 dead | false negative |
+| arm B | eGFP | 27.23 works | 0.797 dead | false negative |
+| arm B | mScarlet | 20.40 works | 0.154 dead | false negative |
+| arm B | RFP3 | 12.37 works | 0.275 dead | false negative |
+| arm G | eGFP | 21.05 works | 0.972 dead | false negative |
+| arm G | RFP3 | 10.91 works | 0.139 dead | false negative |
+| arm E | mScarlet | 0.93 dead | 1.160 works | false positive |
+
+Gene ranking fails too. In `final`, CAGE orders the genes mScarlet > eGFP > RFP3 while DNase orders
+them RFP3 > eGFP > mScarlet, which is nearly reversed.
+
+### Conclusion
+
+The regime-1 coupling is a genuine finding about promoter integrity, and it is the reason DNase
+**gradients** fail as a design objective (see [05](05-ism-mechanism.md)). It does **not** license
+using accessibility as a CAGE surrogate for validation. See
+[07](07-conclusions.md) for the corrected recommendation and
+[08](08-corrections.md) item 8 for the retraction.
 
 ## Caveats
 

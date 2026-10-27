@@ -77,6 +77,33 @@ false negative: highest CAGE of the three genes (13.51), background DNase (0.37)
 screen would have scored the strongest promoter as dead. The recommendation is unchanged in
 direction but now explicitly includes CAGE calibration on a few constructs rather than dropping it
 entirely.
+### 8. "ATAC/DNase can replace CAGE in wet-lab validation" — retracted
+**Claimed:** across nine perturbation arms, $r(\text{CAGE}, \text{DNase})$ = +0.942 to +0.998, so
+accessibility can stand in for CAGE and the lab can drop CAGE from routine validation. Item 6 above
+was a first, insufficient softening of this to "a detector, not a ruler".
+
+**Actually:** the claim fails even as a detector. Scored as a screen (CAGE > 5 works, DNase > 1.0
+works), accessibility disagrees with CAGE on **7 of 21** gene-design combinations, including **all
+three genes of arm B**, the best design in the study. And among designs whose loss contained CAGE,
+which is the production case, the correlation is Pearson **−0.212**, Spearman **−0.033**.
+
+**Cause: I generalized from the wrong population.** The +0.99 figures came from nine arms that are
+all `final`, the CDS-only control, or constructions from them. Inside one sequence family, breaking
+a promoter kills CAGE and accessibility together, so they co-vary almost perfectly. I read that as a
+general property of the two assays. It is not. Across designs produced by *different objectives*,
+the coupling drops to +0.218, and among CAGE-containing designs it vanishes.
+
+Arm E is the clean counterexample and it was in the data the whole time: no CAGE term anywhere in
+its loss, 7× the accessibility of arm B, and 10× worse initiation. A design can have excellent
+chromatin and no initiation. That single fact is simultaneously why chromatin RNA is the most
+interesting CAGE-free objective *and* why accessibility cannot report on CAGE.
+
+**Replaced by:** [07](07-conclusions.md) recommendation 2, which drops the surrogate framing
+entirely and asks which specification is being verified instead.
+
+**What survives:** the regime-1 coupling is still a real finding about promoter integrity within one
+design family, and it remains the reason DNase *gradients* fail as a design objective. The error was
+in the scope of the claim, not the measurement.
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required
