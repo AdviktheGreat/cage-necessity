@@ -14,16 +14,19 @@ Status: complete for the questions below; two items still open (see [Open questi
 
 ## TL;DR
 
-Six findings, in rough order of importance.
+Nine findings, in rough order of importance.
 
 | # | Finding | Evidence |
 |---|---|---|
-| 1 | **CAGE is necessary in the design loss and nothing substitutes for it.** RNA-only reaches 1.3% of the CAGE target; CAGE+RNA reaches 100.8%. Substituting DNase (1.4%), Ser5-P Pol II (0.4%) or chromatin RNA (9.7%) all fail. | [Ablations](docs/06-objective-ablations.md) |
+| 1 | **CAGE is necessary in the design loss and nothing substitutes for it.** RNA-only reaches 1.3% of the CAGE target; CAGE+RNA reaches 100%. Substituting DNase (1.4%), Ser5-P Pol II (0.4%), chromatin RNA (12.1%) or **six chromatin marks jointly (1.5%)** all fail. | [Ablations](docs/06-objective-ablations.md), [multi-track](docs/10-multitrack-chromatin.md) |
 | 2 | **But CAGE is free at design time.** Borzoi predicts all 7,611 tracks in one forward pass, so a CAGE term costs nothing. CAGE only costs money if you *measure* it. The two questions had been conflated. | [Conclusions](docs/07-conclusions.md) |
 | 3 | **No chromatin assay substitutes for CAGE in validation either.** Within one design family CAGE and DNase co-collapse (Pearson +0.942 to +0.998), but across designs from different objectives that drops to +0.218, and among CAGE-containing designs it is **−0.212**. An ATAC-only screen misreads **7 of 21** gene-design combinations, including all three genes of the best design. | [Track coupling](docs/04-context-robustness.md#track-coupling-can-a-chromatin-assay-stand-in-for-cage) |
-| 4 | **Flanking context dominates everything.** The same design scores **437× differently** in random padding versus the real AAVS1 locus. Any result computed with random padding is suspect. | [Context robustness](docs/04-context-robustness.md) |
+| 4 | **Synthetic flanking padding is pathological; real genomic padding is fine.** The same design scores **437× differently** in composition-matched synthetic padding versus the real AAVS1 locus — but across **ten random real genomic loci the spread is only 1.55×**, with AAVS1 at the median. The effect is real DNA versus synthetic DNA, not integration site versus elsewhere. | [Context](docs/04-context-robustness.md), [loci](docs/10-multitrack-chromatin.md#6-random-genomic-loci-are-safe-synthetic-random-padding-is-not) |
 | 5 | **DNase is essentially not optimizable.** The arm that put DNase *in* the loss achieved the **lowest** DNase of any designed arm (0.100), below the arm that never mentioned it (0.408). | [Ablations](docs/06-objective-ablations.md) |
 | 6 | **Same element, different nucleotides.** Scrambling a designed promoter destroys CAGE and DNase together ($r \approx 0.99$), but per-base ISM correlation between them is only −0.04 to +0.35. This explains why DNase is a good *readout* but a bad *objective*. | [ISM](docs/05-ism-mechanism.md) |
+| 7 | **Hitting the CAGE target is not the same as building a promoter.** Scored on H3K4me3/H3K4me1, the lab's `final` is **3.60** and every 600-iteration arm here is **≤0.91** — enhancer-like. The arm with the best CAGE attainment (100% of target) has nearly the worst promoter character. The lab's larger edit count is what promoter identity costs. | [Promoter identity](docs/10-multitrack-chromatin.md#4-promoter-identity-final-is-the-only-design-that-has-it), [correction 9](docs/08-corrections.md) |
+| 8 | **An independent model confirms the designed sequences carry real initiation syntax.** Scored against ProCapNet's K562 PRO-cap motifs — different model, data and authors — CAGE attainment correlates with initiation-motif content at **Spearman +0.850**. Every CAGE-free arm sits at the 137-motif baseline; every CAGE-containing arm is above it. | [Cross-model check](docs/10-multitrack-chromatin.md#5-cross-model-check-procapnets-motifs-independent-of-borzoi) |
+| 9 | **Added constraints make the optimizer abandon a gene rather than degrade all three.** Only **3 of 12** objectives keep all three genes above 10% of their own CAGE target. The failures use *more* edits, so it is an active trade, not under-convergence. A per-gene floor would close it. | [Gene abandonment](docs/10-multitrack-chromatin.md#3-added-constraints-make-the-optimiser-abandon-a-gene) |
 
 ---
 
@@ -182,14 +185,15 @@ borzoi-cage-necessity/
 │   ├── 06-objective-ablations.md the six Ledidi arms
 │   ├── 07-conclusions.md         synthesis and recommendations
 │   ├── 08-corrections.md         every claim retracted during this work, and why
-│   └── 09-methods.md             full reproducible methods
+│   ├── 09-methods.md             full reproducible methods
+│   └── 10-multitrack-chromatin.md multi-track objectives, promoter identity, random loci
 ├── figures/                      5 figures (PNG)
 ├── data/
 │   ├── README.md                 index of every data file and its origin
-│   ├── sequences/                lab originals + control + my 6 designed arms (FASTA)
+│   ├── sequences/                lab originals + control + my 12 designed arms (FASTA)
 │   ├── predictions/              all raw Borzoi outputs (JSON)
 │   ├── context/                  the 524 kb AAVS1 flank, context metadata
-│   └── tables/                   7 machine-readable result tables (CSV)
+│   └── tables/                   11 machine-readable result tables (CSV)
 └── code/                         Modal app + all analysis scripts
 ```
 
@@ -205,6 +209,9 @@ borzoi-cage-necessity/
 `table6_ism_summary.csv` | ISM concentration, centroids, cross-track correlations |
 `table7_borzoi_replicate_spread.csv` | per-replicate disagreement |
 `table8_track_coupling.csv` | CAGE-vs-surrogate Pearson **and** Spearman, per gene, with value ranges |
+`table9_procapnet_motifs.csv` | ProCapNet K562 initiation-motif hits per design, gene and motif |
+`table10_multitrack_arms.csv` | all 13 designs × CAGE/RNA/chromatin, incl. H3K4me1 and promoter character |
+`table11_random_loci.csv` | 11 real genomic contexts × 3 designs, with context GC and CpG |
 
 ---
 
@@ -256,19 +263,34 @@ one model, so the offset does not affect any conclusion.
 - **One context inconsistency:** `table1` (context robustness) was computed with strand-swapped
   reverse-complement averaging; everything else uses plain forward passes. Within-table comparisons
   are valid; do not compare absolute values across that boundary.
-- **Motif identification is consensus matching, not a calibrated PWM scan.** Treat motif names as
-  candidates.
+- **Motif identification in the ISM analysis is consensus matching, not a calibrated PWM scan.**
+  Treat those motif names as candidates. The separate ProCapNet motif scan
+  ([table9](data/tables/table9_procapnet_motifs.csv)) *is* threshold-calibrated against a
+  composition-matched null, but counts pattern matches rather than functional elements.
 
 ---
 
 ## Open questions
 
-1. **What flanking context does the lab's own pipeline use?** Given finding 4, this is the largest
-   remaining uncertainty. Query sent, answer pending.
+1. **Is promoter identity a function of optimization budget or of the objective?** The lab's
+   `final` reaches H3K4me3/H3K4me1 = 3.60; no 600-iteration arm here exceeds 0.91. Longer runs of
+   arms B and J would separate the two explanations. This is now the largest open question.
 2. **What is the third fluorescent protein?** It is **not** HaloTag. See
    [sequence analysis](docs/02-sequence-analysis.md).
-3. Would **CAGE + RNA + chromatin RNA** get both initiation precision and chromatin realism?
-4. Does an explicit antisense penalty remove the bidirectionality defect without costing CAGE?
+3. **Does a per-gene floor prevent gene abandonment** without costing aggregate accuracy?
+4. **Would PRO-cap-based design give strand specificity** without the H3K4me1/H3K4me3
+   entanglement that makes the anti-enhancer term cost a gene?
+
+### Answered since first publication
+
+- **What flanking context does the lab's pipeline use?** Random genomic loci. Tested across ten
+  real loci: safe, 1.55× spread, AAVS1 at the median. The 437× warning applies to *synthetic*
+  padding only. See [correction 10](docs/08-corrections.md).
+- **Would CAGE + RNA + chromatin RNA get both initiation and chromatin realism?** Yes — arm J
+  reaches 86.7% of the CAGE target with DNase 6.92 and Pol II 36.31. But chromatin RNA is itself
+  what causes antisense leakage, and arm J is still enhancer-like on H3K4me3/H3K4me1.
+- **Does an explicit antisense penalty remove the bidirectionality defect without costing CAGE?**
+  Suppressing H3K4me1 gives RNA+/RNA− of 173.6 against the lab's 59.7, but costs a gene.
 
 ---
 

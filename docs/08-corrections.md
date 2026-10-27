@@ -1,8 +1,9 @@
 # 08. Corrections log
 
 Claims made during this work that later proved wrong, and why. Kept because the reason for each
-error is methodologically instructive: all but one trace to a single bad choice, the random
-flanking padding.
+error is methodologically instructive. Corrections 1-5 all trace to one bad choice, the synthetic
+flanking padding. Corrections 7-9 share a different root: measuring only what was being optimized,
+and declaring success before checking anything outside the objective.
 
 ## Retracted
 
@@ -57,6 +58,44 @@ design objective. The strength of the element-level claim is itself qualified in
 **Actually:** in AAVS1 it recovers 0–49% of CAGE and ~1% of RNA. The promoters are necessary but
 clearly **not** sufficient.
 
+### 9. "The short CAGE+RNA arms beat the lab's design" — retracted
+
+**Claim retracted:** that the short CAGE+RNA arms produced here outperform the
+lab's `final` design. Specifically, that arm J "beats the lab's design on CAGE
+(86.7% vs 55.0%), on RNA accuracy, and on parsimony (1,072 edits vs 2,909)," and
+that arm B at 100% of the CAGE target was the strongest design in the set.
+
+**What was wrong:** H3K4me1 was not in the held-out scoring set, so promoter
+versus enhancer character was never measured. Adding it reverses the ranking.
+
+| Design | H3K4me3/H3K4me1 | CAGE % of target |
+|---|---|---|
+| lab's `final` | **3.60** | 55.0 |
+| Markov initial (untouched) | 0.91 | 0.1 |
+| J CAGE+RNA+chrRNA | 0.89 | 86.7 |
+| B CAGE+RNA | **0.41** | **100.0** |
+
+`final` is the only design in the set with promoter-like chromatin character, by
+a factor of four over anything else. Every arm produced here is enhancer-like,
+and the arm with the best CAGE attainment has nearly the worst promoter
+character. Second place in the table is the untouched starting sequence.
+
+**Why it happened:** the arms were scored on the objective they were optimised
+for. This project's central diagnosis is that a CAGE-only objective is satisfied
+by enhancers because enhancers are cheaper than promoters. The same mechanism
+operates, less extremely, under CAGE+RNA — and it went unnoticed for exactly the
+reason it was predicted to be easy to miss: nothing in the scoring set
+distinguished the two.
+
+**Revised conclusion:** CAGE + RNA is sufficient to hit the CAGE target, not to
+produce a promoter. The lab's longer run reached promoter identity that none of
+the 600-iteration arms did, which means its larger edit count is a cost of
+building the right object rather than evidence of inefficiency. Promoter identity
+does not appear anywhere in the objective, so it is currently emergent rather
+than guaranteed; an explicit H3K4me3/H3K4me1 term would make it a requirement.
+
+Detail: [multi-track objectives](10-multitrack-chromatin.md#4-promoter-identity-final-is-the-only-design-that-has-it).
+
 ## Corrected for imprecision, not retracted
 
 ### 6. "No TATA boxes anywhere"
@@ -104,6 +143,27 @@ entirely and asks which specification is being verified instead.
 **What survives:** the regime-1 coupling is still a real finding about promoter integrity within one
 design family, and it remains the reason DNase *gradients* fail as a design objective. The error was
 in the scope of the claim, not the measurement.
+### 10. "Any result computed with random padding is suspect" — narrowed
+
+**Claim narrowed:** that "any result computed with random padding is suspect"
+and that flanking context causes a 437× swing.
+
+**What was imprecise:** "random padding" conflated two very different things.
+The 437× swing is specific to *composition-matched synthetic* random DNA. Testing
+ten *real* genomic loci sampled uniformly over the autosomes gives a CAGE spread
+of only **1.55×** (CV 13.1%), with AAVS1 at the median.
+
+The mechanism is real DNA versus synthetic DNA, not integration site versus
+elsewhere. Synthetic padding at ~40.7% GC with no genes reads as a gene desert;
+literal N, carrying no information, is much safer; any real locus is safer still.
+
+**Revised conclusion:** padding with random genomic loci, which is the lab's
+practice, is sound. The warning applies to synthetic padding only. The residual
+caveat is that RNA is roughly twice as context-sensitive as CAGE (CV 26.5% vs
+13.1%), so RNA comparisons across differently padded runs still need care.
+
+Detail: [random genomic loci](10-multitrack-chromatin.md#6-random-genomic-loci-are-safe-synthetic-random-padding-is-not).
+
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required
