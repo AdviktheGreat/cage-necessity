@@ -1,0 +1,13 @@
+gene,track,n_arms,pearson_vs_cage,spearman_vs_cage,min_value,max_value
+eGFP,DNase,9,0.998,0.733,0.065,3.703
+eGFP,H3K4me3,9,0.999,0.983,1.047,27.375
+eGFP,RNA,9,0.997,0.783,0.009,8.42
+eGFP,Pol2S5,9,0.971,0.567,0.904,20.348
+mScarlet,DNase,9,0.994,0.8,0.066,0.372
+mScarlet,H3K4me3,9,0.984,0.583,0.981,1.81
+mScarlet,RNA,9,0.633,0.65,0.013,7.14
+mScarlet,Pol2S5,9,0.586,0.567,0.639,3.535
+RFP3,DNase,9,0.942,0.833,0.068,5.647
+RFP3,H3K4me3,9,0.974,0.833,1.044,22.167
+RFP3,RNA,9,0.993,0.85,0.004,4.438
+RFP3,Pol2S5,9,0.971,0.817,1.453,26.211

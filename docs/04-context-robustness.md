@@ -89,11 +89,43 @@ Correlating readouts across all nine perturbation arms (which span dead to fully
 | mScarlet | **+0.994** | +0.984 | +0.633 | +0.586 |
 | RFP3 | **+0.942** | +0.974 | +0.993 | +0.971 |
 
-**This is the practical basis for dropping CAGE from validation.** At the level of whole elements,
-accessibility and H3K4me3 track CAGE almost perfectly.
+**Those are Pearson, and Pearson flatters them.** These arms span 0.067 to 5.6, so the dead-versus-working
+contrast dominates the coefficient. Rank correlation over the same data is markedly weaker:
 
-Note that mScarlet is an outlier: highest CAGE of the three (13.5) but by far the lowest DNase
-(0.37, against 3.7 and 5.6). A real dissociation worth understanding.
+| Gene | Spearman(CAGE, DNase) | Spearman(CAGE, H3K4me3) |
+|---|---|---|
+| eGFP | +0.733 | +0.983 |
+| mScarlet | +0.800 | +0.583 |
+| RFP3 | +0.833 | +0.833 |
+
+So the honest statement is: **accessibility is a near-perfect detector of whether a promoter fired,
+and a moderate predictor of how strongly.** For screening ("did this construct work?") that is
+sufficient. For finely ranking two designs that both work, it is not, and CAGE calibration matters.
+
+### The mScarlet false negative
+
+mScarlet is a concrete failure mode of the surrogate, not just an outlier:
+
+| Gene in `final` | CAGE | DNase |
+|---|---|---|
+| eGFP | 10.75 | 3.70 |
+| **mScarlet** | **13.51** (highest) | **0.37** (background) |
+| RFP3 | 8.75 | 5.65 |
+
+mScarlet has the strongest CAGE of the three genes and essentially no accessibility signal. **An
+ATAC-only screen would have scored it a failure.**
+
+Worse, mScarlet's DNase spans only **0.066 to 0.372 across all nine arms**, against 0.065–3.70 for
+eGFP and 0.068–5.65 for RFP3. It never leaves background in any arm, dead or working. So its
+headline +0.994 Pearson is a correlation *within noise* and carries no practical information. The
+same is true of its H3K4me3 (0.98–1.81). For this gene, accessibility is simply not a usable
+readout at any level.
+
+Why mScarlet behaves this way is unresolved and worth understanding, since it is the one gene whose
+designed promoter Borzoi considers strong but silent-looking by every chromatin measure.
+
+This is why the recommendation is RNA-seq + ATAC with CAGE run once on a few constructs to
+calibrate, rather than ATAC alone.
 
 ## Caveats
 
@@ -105,4 +137,5 @@ Note that mScarlet is an outlier: highest CAGE of the three (13.5) but by far th
   nothing, making the denominator small.
 
 Data: `data/tables/table1_context_robustness.csv`,
-`data/tables/table2_promoter_necessity_sufficiency.csv`.
+`data/tables/table2_promoter_necessity_sufficiency.csv`,
+`data/tables/table8_track_coupling.csv` (regenerate with `code/analyze_track_coupling.py`).

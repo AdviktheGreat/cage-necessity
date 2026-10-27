@@ -32,7 +32,9 @@ not the nucleotides.
 
 This single observation reconciles the two halves of the project:
 
-- **Validation operates at element level.** DNase/ATAC is an excellent CAGE surrogate.
+- **Validation operates at element level.** DNase/ATAC is an excellent CAGE surrogate for detecting
+  whether an element fired (though see [04](04-context-robustness.md) for its weaker rank behaviour
+  and the mScarlet false negative).
 - **Design operates at base level.** Gradients from a DNase term point somewhere else, so DNase
   cannot substitute for CAGE in the loss. Confirmed empirically in [06](06-objective-ablations.md).
 

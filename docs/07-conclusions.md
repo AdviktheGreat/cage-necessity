@@ -15,7 +15,7 @@ Separating them resolves the project:
 | | Is CAGE needed? | Evidence |
 |---|---|---|
 | In the design loss | **Yes, and irreplaceably** | CAGE+RNA reaches 100.8% of target; RNA-only 1.3%; best CAGE-free substitute 9.7% |
-| In wet-lab validation | **No** | element-level $r(\text{CAGE},\text{DNase})$ = +0.942 to +0.998 |
+| In wet-lab validation | **Largely no** | element-level $r(\text{CAGE},\text{DNase})$ = +0.942 to +0.998 Pearson, +0.73 to +0.83 rank |
 
 ## Why CAGE is irreplaceable in the loss
 
@@ -42,17 +42,24 @@ out uniquely, and only CAGE does.
 ### 1. Keep CAGE in the design loss
 Free, irreplaceable, and removing it costs the entire phenotype.
 
-### 2. Validate with RNA-seq + ATAC, not CAGE
-Element-level coupling is 0.942–0.998 for DNase and 0.974–0.999 for H3K4me3. Assay CAGE once on two
-or three constructs to calibrate the relationship, then run RNA-seq + ATAC for everything after.
+### 2. Validate with RNA-seq + ATAC, calibrated against CAGE
+Element-level Pearson coupling is 0.942–0.998 for DNase and 0.974–0.999 for H3K4me3, but those
+coefficients are inflated by the dead-versus-working dynamic range. Rank correlation over the same
+arms is +0.73 to +0.83. Accessibility is therefore a **near-perfect detector of whether a promoter
+fired and a moderate predictor of how strongly**.
 
-One caveat: across-design rank correlation is only 0.74–0.81, and the discordance comes entirely
-from the deliberately pathological arms (RNA-only, RNA+DNase, RNA+Pol II) that hit RNA targets with
-no initiation. A production pipeline that keeps CAGE in the loss should not generate those. The
-calibration step is cheap insurance.
+Two reasons to keep a little CAGE rather than none:
 
-Note for K562 specifically: **Borzoi has no ATAC track for K562** (232 ATAC tracks exist, none in
-K562; K562 has 4 CAGE, 7 DNase, 424 ChIP, 94 RNA). In-silico accessibility for K562 means DNase.
+- **mScarlet is a real false negative.** In the lab's `final` design it has the highest CAGE of the
+  three genes (13.5) and background DNase (0.37). An ATAC-only screen would have called it dead.
+- **Across-design rank correlation is only 0.74–0.81**, and the discordance comes entirely from the
+  deliberately pathological arms (RNA-only, RNA+DNase, RNA+Pol II) that hit RNA targets with no
+  initiation. A pipeline that keeps CAGE in the loss should not generate those.
+
+So: RNA-seq + ATAC for everything, with CAGE on two or three constructs to fix the relationship.
+
+One note for K562 specifically: **Borzoi has no ATAC track for K562** (232 ATAC tracks exist, none
+in K562; K562 has 4 CAGE, 7 DNase, 424 ChIP, 94 RNA). In-silico accessibility for K562 means DNase.
 
 ### 3. Try CAGE + RNA + chromatin-fraction RNA
 The clearest gap in the current objective. Arm B (CAGE+RNA) overshoots CAGE 44.0 against the lab's

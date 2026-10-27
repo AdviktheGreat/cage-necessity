@@ -41,7 +41,8 @@ shows suppresses the designs up to 437×. Do not draw conclusions from them.
 
 ## `tables/`
 
-Seven CSV tables, documented in the [README](../README.md#result-tables).
+Eight CSV tables, documented in the [README](../README.md#result-tables).
+`table8_track_coupling.csv` is regenerated from `table2` by `code/analyze_track_coupling.py`.
 
 ## Coordinate conventions
 

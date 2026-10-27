@@ -20,7 +20,7 @@ Six findings, in rough order of importance.
 |---|---|---|
 | 1 | **CAGE is necessary in the design loss and nothing substitutes for it.** RNA-only reaches 1.3% of the CAGE target; CAGE+RNA reaches 100.8%. Substituting DNase (1.4%), Ser5-P Pol II (0.4%) or chromatin RNA (9.7%) all fail. | [Ablations](docs/06-objective-ablations.md) |
 | 2 | **But CAGE is free at design time.** Borzoi predicts all 7,611 tracks in one forward pass, so a CAGE term costs nothing. CAGE only costs money if you *measure* it. The two questions had been conflated. | [Conclusions](docs/07-conclusions.md) |
-| 3 | **For wet-lab validation, ATAC/DNase is a near-perfect CAGE surrogate.** Across nine perturbation arms, $r(\text{CAGE}, \text{DNase})$ = +0.942 to +0.998 and $r(\text{CAGE}, \text{H3K4me3})$ = +0.974 to +0.999. | [Necessity/sufficiency](docs/04-context-robustness.md) |
+| 3 | **For wet-lab validation, ATAC/DNase substitutes for CAGE as a detector, not as a ruler.** Across nine perturbation arms, Pearson $r(\text{CAGE}, \text{DNase})$ = +0.942 to +0.998, but rank correlation is only +0.73 to +0.83, and mScarlet is a true false negative (highest CAGE, background DNase). Use RNA-seq + ATAC, calibrated against CAGE on 2–3 constructs. | [Necessity/sufficiency](docs/04-context-robustness.md) |
 | 4 | **Flanking context dominates everything.** The same design scores **437× differently** in random padding versus the real AAVS1 locus. Any result computed with random padding is suspect. | [Context robustness](docs/04-context-robustness.md) |
 | 5 | **DNase is essentially not optimizable.** The arm that put DNase *in* the loss achieved the **lowest** DNase of any designed arm (0.100), below the arm that never mentioned it (0.408). | [Ablations](docs/06-objective-ablations.md) |
 | 6 | **Same element, different nucleotides.** Scrambling a designed promoter destroys CAGE and DNase together ($r \approx 0.99$), but per-base ISM correlation between them is only −0.04 to +0.35. This explains why DNase is a good *readout* but a bad *objective*. | [ISM](docs/05-ism-mechanism.md) |
@@ -155,8 +155,10 @@ only one that gets both, which is probably what its much longer optimization bou
 
 1. **Keep CAGE in the design loss.** It is computationally free, nothing substitutes for it, and
    removing it costs the entire phenotype.
-2. **Drop CAGE from wet-lab validation. Use RNA-seq + ATAC.** Element-level coupling is 0.94–0.998.
-   Assay CAGE once on two or three constructs to calibrate, then run RNA-seq + ATAC thereafter.
+2. **Drop CAGE from routine wet-lab validation. Use RNA-seq + ATAC.** Element-level Pearson coupling
+   is 0.94–0.998, though rank correlation is only ~0.8 and one of the three genes (mScarlet) would be
+   a false negative on ATAC alone. Assay CAGE once on two or three constructs to calibrate, then run
+   RNA-seq + ATAC thereafter.
 3. **Add an explicit antisense penalty.** Every arm here produced RNA+/RNA− of only 2.6–4.9 against
    the lab design's 59.7. Specifying only RNA+ lets the optimizer build bidirectional promoters.
 4. **Design in the intended integration locus, not random padding.** Potentially a large and free
@@ -202,6 +204,7 @@ borzoi-cage-necessity/
 `table5_designed_sequences.csv` | edit counts, GC, CpG o/e for every sequence |
 `table6_ism_summary.csv` | ISM concentration, centroids, cross-track correlations |
 `table7_borzoi_replicate_spread.csv` | per-replicate disagreement |
+`table8_track_coupling.csv` | CAGE-vs-surrogate Pearson **and** Spearman, per gene, with value ranges |
 
 ---
 

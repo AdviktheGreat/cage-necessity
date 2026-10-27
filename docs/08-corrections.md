@@ -49,7 +49,7 @@ implied base-level claim is wrong: per-base ISM correlation is only −0.04 to +
 
 **Refined to:** same element, different nucleotides. This distinction turned out to be the key to
 the whole project, because it explains why DNase works as a validation surrogate but fails as a
-design objective.
+design objective. The strength of the element-level claim is itself qualified in item 7 below.
 
 ### 5. Promoter sufficiency numbers
 **Claimed:** transplanting the 600 bp promoter into the control recovered 46–86% of CAGE.
@@ -66,6 +66,17 @@ upstream of its designed TSS, and RFP3 has one at −258 on the minus strand. Bo
 below-background ISM attribution, so the functional conclusion (TATA-less, CpG-enriched promoters)
 stands.
 
+### 7. "ATAC/DNase is a near-perfect CAGE surrogate"
+**Stated too strongly.** The quoted +0.942 to +0.998 are Pearson coefficients over arms spanning
+0.067 to 5.6, so the on/off contrast carries them. Rank correlation over the same data is +0.733 to
++0.833.
+
+**Refined to:** accessibility is a near-perfect *detector* of whether a promoter fired and a moderate
+*ruler* of how strongly. The correction matters because mScarlet in the lab's own design is a true
+false negative: highest CAGE of the three genes (13.51), background DNase (0.37). An ATAC-only
+screen would have scored the strongest promoter as dead. The recommendation is unchanged in
+direction but now explicitly includes CAGE calibration on a few constructs rather than dropping it
+entirely.
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required
