@@ -170,6 +170,7 @@ only one that gets both, which is probably what its much longer optimization bou
 ```
 borzoi-cage-necessity/
 ├── README.md                     you are here
+├── LICENSE                       MIT for code/, with data rights noted
 ├── docs/
 │   ├── 01-source-material.md     the draft deck: structure, claims, internal conflicts
 │   ├── 02-sequence-analysis.md   what the lab's sequences actually contain
@@ -182,6 +183,7 @@ borzoi-cage-necessity/
 │   └── 09-methods.md             full reproducible methods
 ├── figures/                      5 figures (PNG)
 ├── data/
+│   ├── README.md                 index of every data file and its origin
 │   ├── sequences/                lab originals + control + my 6 designed arms (FASTA)
 │   ├── predictions/              all raw Borzoi outputs (JSON)
 │   ├── context/                  the 524 kb AAVS1 flank, context metadata
@@ -275,6 +277,9 @@ designs and the deck, and for confirming that the sequences are (+) strand. Ledi
 Jacob Schreiber; Borzoi is from Calico, with the PyTorch port by Johannes Hingerl.
 
 This repository contains only my own independent follow-up analysis. Any errors are mine.
+
+The lab's original sequences and the draft manuscript are unpublished and are **not** licensed for
+redistribution; see [LICENSE](LICENSE). My code, analysis and figures are freely reusable.
 
 ## Software
 
