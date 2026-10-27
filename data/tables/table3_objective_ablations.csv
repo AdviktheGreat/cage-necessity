@@ -1,0 +1,10 @@
+design,objective,cage_pct_target,rna_pct_target,dnase_peak_mean,cage_in_loss,dnase_in_loss,eGFP_cage,mScarlet_cage,RFP3_cage,eGFP_rna,mScarlet_rna,RFP3_rna,eGFP_dnase,mScarlet_dnase,RFP3_dnase
+initial,(Markov init),0.1,0.2,0.083,False,False,0.012,0.009,0.01,0.009,0.013,0.005,0.074,0.093,0.083
+control,(CDS-only control),0.1,2.4,0.068,False,False,0.028,0.011,0.018,0.154,0.123,0.079,0.068,0.068,0.068
+final,CAGE+RNA (lab pipeline),59.6,137.0,3.241,True,False,10.752,13.512,8.753,8.42,7.14,4.438,3.703,0.372,5.647
+A_rna,RNA only,1.3,106.2,0.121,False,False,0.41,0.249,0.133,7.118,5.269,3.342,0.152,0.106,0.106
+B_cage_rna,CAGE+RNA,100.8,102.7,0.408,True,False,27.234,20.398,12.369,7.168,5.193,3.053,0.797,0.154,0.275
+G_cage_rna_dw,CAGE(x0.25)+RNA,55.8,102.1,0.446,True,False,21.053,0.236,10.908,7.033,4.84,3.269,0.972,0.226,0.139
+C_rna_dnase,RNA+DNase,1.4,100.5,0.1,False,True,0.483,0.263,0.122,7.346,5.094,2.844,0.114,0.11,0.075
+E_rna_chrrna,RNA+chromatinRNA,9.7,112.2,2.774,False,False,5.94,0.932,0.391,7.942,5.549,3.366,6.943,1.16,0.22
+F_rna_pol2,RNA+Ser5P-Pol2,0.4,99.3,0.055,False,False,0.165,0.048,0.04,6.683,5.039,3.045,0.062,0.046,0.055

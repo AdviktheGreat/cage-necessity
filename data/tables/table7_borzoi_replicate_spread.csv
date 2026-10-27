@@ -1,0 +1,13 @@
+gene,replicate,cage_peak_randomflank,pct_of_target
+eGFP,0,0.0445,0.2
+eGFP,1,0.1722,0.6
+eGFP,2,0.6452,2.3
+eGFP,3,0.0213,0.1
+mScarlet,0,7.5892,37.9
+mScarlet,1,7.3285,36.6
+mScarlet,2,19.8585,99.3
+mScarlet,3,11.4188,57.1
+RFP3,0,0.4004,3.3
+RFP3,1,0.4312,3.6
+RFP3,2,2.5032,20.9
+RFP3,3,0.7542,6.3

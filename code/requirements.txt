@@ -1,0 +1,8 @@
+modal>=1.5
+torch
+transformers
+huggingface_hub
+borzoi-pytorch==0.5.1
+ledidi==2.2.0
+numpy
+matplotlib

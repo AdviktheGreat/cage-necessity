@@ -1,0 +1,46 @@
+LICENSING AND DATA RIGHTS
+=========================
+
+CODE
+----
+All files under code/ are released under the MIT License (below), copyright (c) 2026 Advik Anand.
+
+ANALYSIS AND DOCUMENTATION
+--------------------------
+All files under docs/, figures/, data/tables/, data/predictions/ and data/context/, and README.md,
+are my own work, copyright (c) 2026 Advik Anand. Available for reuse with attribution.
+
+THIRD-PARTY DATA - NOT LICENSED FOR REDISTRIBUTION
+--------------------------------------------------
+The following are the work and property of the Pinglay lab and are included here only for
+reproducibility of the analysis. They are NOT licensed for redistribution or reuse, and are
+unpublished:
+
+  data/sequences/output_X_0_initial.txt
+  data/sequences/output_X_0_final.txt
+  data/sequences/gfp_scarlet_halo.fasta
+  docs/01-source-material.md   (describes an unpublished draft manuscript)
+
+Derived files (data/sequences/initial_with_cds.fasta, output_X_0_initial_with_cds.txt, and
+data/sequences/designed_arms/*) are constructed from the above and inherit the same restriction on
+the portions that originate from the lab's sequences.
+
+Genomic sequence in data/context/aavs1_flank.txt is from the UCSC hg38 assembly and is in the
+public domain.
+
+MIT License (applies to code/ only)
+-----------------------------------
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

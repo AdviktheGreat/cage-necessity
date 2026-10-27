@@ -1,0 +1,21 @@
+{
+ "initial": {
+  "path": "/tmp/borzoi_in/initial_ctx.txt",
+  "len": 524288
+ },
+ "control": {
+  "path": "/tmp/borzoi_in/control_ctx.txt",
+  "len": 524288
+ },
+ "final": {
+  "path": "/tmp/borzoi_in/final_ctx.txt",
+  "len": 524288
+ },
+ "CTX": 524288,
+ "design_start": 252160,
+ "design_len": 19968,
+ "crop": 163840,
+ "bin0": 2760,
+ "nbins": 624,
+ "BIN": 32
+}

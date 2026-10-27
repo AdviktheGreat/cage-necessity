@@ -1,0 +1,10 @@
+arm,objective,tracks,edits,mutable_positions,edit_pct,final_output_mse,seconds,gc_noncds_pct,cpg_oe_noncds
+A_rna,RNA+ only,CAGE+|RNA+,555,17847,3.11,0.0691,212.4,41.46,0.32
+B_cage_rna,CAGE+ and RNA+,CAGE+|RNA+,689,17847,3.86,0.0633,199.7,41.71,0.331
+C_rna_dnase,RNA+ and DNase,RNA+|DNase,646,17847,3.62,0.1336,212.9,41.46,0.331
+E_rna_chrrna,RNA+ and chromatin-fraction RNA,RNA+|chrRNA+,1004,17847,5.63,0.1179,214.7,42.04,0.431
+F_rna_pol2,RNA+ and Ser5-P Pol II,RNA+|Pol2S5,972,17847,5.45,0.3014,202.2,40.91,0.354
+G_cage_rna_dw,CAGE+ (weight 0.25) and RNA+,CAGE+|RNA+,566,17847,3.17,0.1543,202.0,41.65,0.304
+markov_initial,(reference sequence),,,,,,,40.84,0.231
+cds_only_control,(reference sequence),,,,,,,40.84,0.231
+ledidi_final,(reference sequence),,,,,,,42.21,0.498
