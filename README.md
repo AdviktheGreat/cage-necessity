@@ -215,7 +215,7 @@ borzoi-cage-necessity/
 `table7_borzoi_replicate_spread.csv` | per-replicate disagreement |
 `table8_track_coupling.csv` | CAGE-vs-surrogate Pearson **and** Spearman, per gene, with value ranges |
 `table9_procapnet_motifs.csv` | ProCapNet K562 initiation-motif hits per design, gene and motif |
-`table10_multitrack_arms.csv` | all 13 designs × CAGE/RNA/chromatin, incl. H3K4me1 and promoter character |
+`table10_multitrack_arms.csv` | all 21 designs × CAGE/RNA/chromatin, with CAGE scored **both** as area and as peak, plus initiation breadth, H3K4me1 and promoter character. Regenerate with `code/make_table10_multitrack.py` |
 `table11_random_loci.csv` | 11 real genomic contexts × 3 designs, with context GC and CpG |
 
 ---

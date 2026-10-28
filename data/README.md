@@ -57,3 +57,22 @@ Eleven CSV tables, documented in the [README](../README.md#result-tables).
 
 All sequence coordinates are 0-based, half-open, relative to the 19,968 bp design.
 Output bin $b$ of the design corresponds to design base $32b$, and to Borzoi output bin $2760 + b$.
+
+### A note on `table10`'s columns
+
+`cage_pct_of_target_AREA` and `cage_pct_of_target_PEAK` are the same prediction read
+two ways, and they disagree by up to 2× — see
+[correction 11](../docs/08-corrections.md). The area reading sums 5 bins from the
+designed TSS, matching slide 50's description of the objective. The peak reading
+takes the maximum over a 10-bin window, which is what this repository used
+originally. **Prefer the area column** unless you are reproducing an older figure.
+
+`initiation_breadth` is area ÷ peak. A value near 1.0 means the entire CAGE signal
+sits in one 32 bp bin, which is what the short arms here produce. The lab's `final`
+is at 2.14, i.e. a spread-out initiation zone.
+
+`n_edits` counts substitutions against the **CDS-only control**, which is what every
+designed arm was initialised from. `initial` shows 1,616 because the Markov backbone
+carries different CDS sequence than the control does; it is not an edited design.
+
+`genes_lost` counts genes whose CAGE peak fell below 10% of that gene's own target.
