@@ -15,6 +15,11 @@ Status: complete for the questions below; two items still open (see [Open questi
 ## TL;DR
 
 Nine findings, in rough order of importance.
+> **Reading the numbers below.** Every "% of CAGE target" in this README is a **peak height** in a
+> 10-bin window at the TSS. The source deck's slide 50 implies the objective is an **area** over
+> ~160 bp. The choice matters: the lab's `final` is at 55% of target as a peak and **112% as an
+> area**. See [correction 11](docs/08-corrections.md). Area readouts are in
+> [table10](data/tables/table10_multitrack_arms.csv).
 
 | # | Finding | Evidence |
 |---|---|---|
@@ -272,14 +277,20 @@ one model, so the offset does not affect any conclusion.
 
 ## Open questions
 
-1. **Is promoter identity a function of optimization budget or of the objective?** The lab's
-   `final` reaches H3K4me3/H3K4me1 = 3.60; no 600-iteration arm here exceeds 0.91. Longer runs of
-   arms B and J would separate the two explanations. This is now the largest open question.
-2. **What is the third fluorescent protein?** It is **not** HaloTag. See
+1. **Why does the lab's `final` have promoter character when nothing here does?** It scores
+   H3K4me3/H3K4me1 = 3.60; no arm here exceeds 0.91. Four explanations are ruled out: optimization
+   budget (2,400 iterations is byte-identical to 600), the edit penalty (looser `l` makes it
+   *worse*), an explicit H3K4me3↑/H3K4me1↓ term (makes it worse still), and initiation-zone
+   breadth alone (correlates at Spearman +0.679 but arm L matches `final`'s breadth at 0.62
+   character). **The cause is unidentified.** See [correction 13](docs/08-corrections.md).
+2. **Is the CAGE objective an area or a peak, and over exactly which window?** Scoring it as a
+   5-bin area moves `final` from 55% to 112% of target, so this single choice changes the headline
+   comparison. Slide 50 implies an area; confirming the exact window would settle it.
+3. **What is the third fluorescent protein?** It is **not** HaloTag. See
    [sequence analysis](docs/02-sequence-analysis.md).
-3. **Does a per-gene floor prevent gene abandonment** without costing aggregate accuracy?
-4. **Would PRO-cap-based design give strand specificity** without the H3K4me1/H3K4me3
-   entanglement that makes the anti-enhancer term cost a gene?
+4. **Does a per-gene floor prevent gene abandonment** without costing aggregate accuracy?
+5. **Would PRO-cap-based design give strand specificity** without the H3K4me1/H3K4me3
+   entanglement, which [correction 12](docs/08-corrections.md) shows makes the direct approach fail?
 
 ### Answered since first publication
 

@@ -45,6 +45,11 @@ def readouts(y, tracks=("CAGE+","CAGE-","DNase","DNase2","RNA+","RNA-","chrRNA+"
         for g,(a,z) in GENES.items():
             tb=(a-128)//BINW; lo,hi=max(0,tb-4),tb+6
             out[f"{n}|{g}"] = float(p[a//BINW:-(-z//BINW)].mean()) if n in ("RNA+","RNA-","chrRNA+") else float(p[lo:hi].max())
+            if n in ("CAGE+","CAGE-"):
+                # Slide 50 describes the CAGE objective as an AREA over the 5'UTR plus
+                # 32 bp (~160 bp, 5 bins), not a peak height at one bin. Reporting both
+                # so "percent of target" can be checked against either reading.
+                out[f"{n}area|{g}"] = float(p[tb:tb+5].sum())
         out[f"{n}|_mean"]=float(p.mean()); out[f"{n}|_max"]=float(p.max())
     return out
 
@@ -127,6 +132,10 @@ OBJ = {
   # These two combine the halves that worked.
   "L_cage_rna_chrrna_antienh": {"CAGE+":1.0, "RNA+":1.0, "chrRNA+":1.0, "H3K4me1":3.0},
   "M_cage_rna_antienh":        {"CAGE+":1.0, "RNA+":1.0, "H3K4me1":3.0},
+  # Tests the recommendation that falls out of correction 9: make promoter
+  # identity an explicit requirement (H3K4me3 up, H3K4me1 down) rather than
+  # something that emerges from a long enough run.
+  "N_cage_rna_promoteridentity": {"CAGE+":1.0, "RNA+":1.0, "H3K4me3":2.0, "H3K4me1":2.0},
 }
 # Multi-track arms normalise each track by its scale so high-amplitude marks
 # (Pol2A ~22) cannot swamp RNA (~7) through units alone.
@@ -225,7 +234,12 @@ def design(arm="B_cage_rna", flank="aavs1", init="control", max_iter=600,
            "n_edits":n_edits,"edit_frac":round(n_edits/n_mut,4),"max_iter":max_iter,
            "l":l,"lr":lr,"batch_size":batch_size,"tracks":track_names,
            "final_output_mse":float(err[best])}
-    with open(f"/data/out/design_{arm}.json","w") as f: json.dump({**res,"design":dsn}, f)
+    # Longer runs or different edit penalties must not overwrite earlier results.
+    label = arm
+    if max_iter != 600: label += f"_i{max_iter}"
+    if abs(l - 1e-3) > 1e-12: label += f"_l{l:g}"
+    res["arm"] = label
+    with open(f"/data/out/design_{label}.json","w") as f: json.dump({**res,"design":dsn}, f)
     data.commit()
     return res
 

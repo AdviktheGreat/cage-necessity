@@ -164,6 +164,102 @@ caveat is that RNA is roughly twice as context-sensitive as CAGE (CV 26.5% vs
 
 Detail: [random genomic loci](10-multitrack-chromatin.md#6-random-genomic-loci-are-safe-synthetic-random-padding-is-not).
 
+### 11. "The lab's design reaches only 55–60% of its CAGE target" — retracted
+
+**Claim retracted:** that the lab's `final` design attains 55.0% (AAVS1, this
+work) or 59.6% (earlier runs) of its 28/20/12 CAGE request, and the repeated
+framing that the short arms here "beat the lab's design on CAGE."
+
+**What was wrong:** the readout. This work measured CAGE as a **peak height** in a
+10-bin window around the TSS. Slide 50 of the source deck describes the
+objective as an **area** over the 5′UTR plus 32 bp, roughly 160 bp, which is 5
+bins. Those are different quantities, and for a broad initiation zone they differ
+by a factor of two or more.
+
+Re-scored as a 5-bin area:
+
+| Design | CAGE as peak | CAGE as area |
+|---|---|---|
+| **lab's `final`** | **55.0%** | **112.1%** |
+| B CAGE+RNA | 100.0% | 107.6% |
+| J CAGE+RNA+chrRNA | 86.7% | 110.9% |
+
+**The lab's design is on target in aggregate.** It only looked like a 45% shortfall
+because a peak was compared against an area.
+
+**What survives:** the per-gene ladder is still not attained, but differently from
+what was reported. As an area, `final` gives eGFP 112.8%, mScarlet 73.6% and
+RFP3 **174.7%** of their individual targets, so RFP3 overshoots by 1.75× and
+mScarlet undershoots. The aggregate 112.1% averages those out.
+
+Arm B as an area is 109.5% / 103.9% / 109.6%, so it does attain the ladder on
+both readings. But see [correction 9](#9-the-short-cagerna-arms-beat-the-labs-design--retracted):
+it attains it by building single-bin spikes.
+
+**The lesson, again:** a percent-of-target number is only meaningful once the
+target's functional form is pinned down. Every "% of CAGE target" in this
+repository before this correction is a peak reading.
+
+### 12. "An explicit H3K4me3-up / H3K4me1-down term would make promoter identity a requirement" — retracted
+
+**Recommendation retracted.** It was proposed in
+[correction 9](#9-the-short-cagerna-arms-beat-the-labs-design--retracted) and in
+[docs/10](10-multitrack-chromatin.md), and it fails when run.
+
+Arm N (`CAGE + RNA + H3K4me3↑ + H3K4me1↓`, weights 1/1/2/2, 600 iterations):
+
+| | H3K4me3 | H3K4me1 | **H3K4me3/H3K4me1** | genes lost |
+|---|---|---|---|---|
+| B CAGE+RNA (no such term) | 10.67 | 26.32 | **0.41** | 0 |
+| **N, with the term** | **0.69** | 2.15 | **0.32** | 1 |
+| lab's `final` | 27.38 | 7.61 | **3.60** | 0 |
+
+Asking for H3K4me3 up and H3K4me1 down **drives both down.** H3K4me3 fell from
+10.67 to 0.69 despite being explicitly requested at a target near 17. The
+optimiser satisfies the easy half of the instruction (flatten H3K4me1) and
+abandons the hard half, because the two marks are too correlated in Borzoi's
+training data to be moved in opposite directions. Promoter character ends up
+*worse* than not asking at all, and RFP3 is lost.
+
+This strengthens rather than weakens the case for PRO-cap-based design: the
+promoter-versus-enhancer distinction appears to be unreachable through Borzoi's
+H3K4 tracks, whatever weighting is used.
+
+### 13. Two further hypotheses for the promoter-identity gap, both ruled out
+
+Neither is a retracted claim, but both were stated as the likely explanation and
+both are wrong.
+
+**Optimisation budget.** Arm B at 2,400 iterations is **byte-identical** to arm B
+at 600 iterations: 0 differing bases out of 19,968, same 689 edits, same MSE
+0.0633. Arm J differs by 494 bases with promoter character essentially unchanged
+(0.89 → 0.87). Ledidi converges at or before 600 iterations here, so the lab's
+longer runtime cannot be buying promoter identity through iterations alone.
+
+**Edit penalty.** Loosening `l` increases edits but makes promoter character
+*worse*, the opposite of the prediction:
+
+| Arm | `l` | edits | H3K4me3/H3K4me1 |
+|---|---|---|---|
+| B | 1e-3 | 689 | 0.41 |
+| B | 1e-4 | 1,677 | 0.28 |
+| B | 1e-5 | 2,352 | 0.21 |
+| J | 1e-5 | 2,625 | 0.60 |
+| lab's `final` | ? | 2,909 | **3.60** |
+
+So the lab's 2,909 edits are not what produces its 3.60. This work reached 2,625
+edits and got 0.60.
+
+**What is left.** Initiation-zone breadth (5-bin area ÷ peak height) correlates
+with promoter character at Spearman **+0.679** across 14 designs, and the single-bin
+spikes produced here are the most enhancer-like. But it is not sufficient: arm L
+has the same breadth as `final` (2.13 vs 2.14) and only 0.62 promoter character.
+`final` remains an outlier that none of budget, edit penalty, chromatin terms or
+initiation breadth explains. **The cause is still unidentified**, and the most
+likely remaining candidate is a difference in the objective's functional form
+beyond peak-versus-area — which is a question for the authors, not something that
+can be settled from the outputs alone.
+
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required
