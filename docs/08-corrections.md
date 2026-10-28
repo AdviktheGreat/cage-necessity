@@ -260,6 +260,55 @@ likely remaining candidate is a difference in the objective's functional form
 beyond peak-versus-area — which is a question for the authors, not something that
 can be settled from the outputs alone.
 
+### 14. The third gene identified: it is TagBFP, and "RFP3" is a misnomer
+
+**Resolved, not retracted** — this was listed as an open question since the first
+commit. The third protein is **TagBFP**, a blue fluorescent protein.
+
+The 702 bp CDS at 14805–15507 translates to 233 amino acids, and that sequence is
+an **exact, character-for-character match** to TagBFP in
+[FPbase](https://www.fpbase.org/protein/tagbfp/): 233 of 233 residues, zero
+substitutions, aligned against all 1,042 proteins in the database. The runner-up,
+mTagBFP2, is 98.3%; the best non-TagBFP hit is 51%.
+
+| | TagBFP |
+|---|---|
+| length | 233 aa (matches exactly) |
+| excitation / emission | **402 nm / 457 nm** (blue) |
+| oligomeric state | monomeric |
+| brightness | 32.76 |
+| PDB | 3M24 |
+
+**Why it looked like a red protein.** TagBFP is engineered *from* TagRFP and is
+94.3% identical to it (13 substitutions: N18D, M61L, R65K, P125T, N141F, M144T,
+S156N, G166S, C170A, F172I, H195Y, D204N, K205N). Same scaffold, shifted colour.
+Reading the sequence by eye put it in the eqFP578/TagRFP lineage, which was correct
+but one step short, and the provisional label `RFP3` followed from that. It is blue,
+not red.
+
+**Two things this confirms.** The lab's files label this gene HaloTag, which it
+is not — HaloTag is 894 bp / 297 aa with no peptide-level similarity. And slide 45's
+schematic shows **GFP / BFP / RFP**, which was right all along; the schematic should
+have been trusted over the file name.
+
+**The construct is therefore:**
+
+| Position | Gene | Colour | Excite / emit | RNA target |
+|---|---|---|---|---|
+| 4462–5182 | eGFP | green | 488 / 507 nm | 7 |
+| 9644–10343 | mScarlet | red | 569 / 594 nm | 5 |
+| 14805–15507 | **TagBFP** | **blue** | **402 / 457 nm** | 3 |
+
+**Practical consequence.** Emission peaks at 457, 507 and 594 nm are three
+well-separated channels, so **flow cytometry can read all three levels
+simultaneously in single cells** with standard filter sets. That strengthens
+[recommendation 2](../README.md): the 7/5/3 expression ladder does not need any
+sequencing assay to verify, and the three-colour readout is cleaner than this
+work assumed when the third protein was thought to be a second red.
+
+**Note on naming.** The identifier `RFP3` is kept throughout the code, data files
+and tables for continuity with earlier results. It refers to TagBFP.
+
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required

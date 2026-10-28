@@ -286,14 +286,24 @@ one model, so the offset does not affect any conclusion.
 2. **Is the CAGE objective an area or a peak, and over exactly which window?** Scoring it as a
    5-bin area moves `final` from 55% to 112% of target, so this single choice changes the headline
    comparison. Slide 50 implies an area; confirming the exact window would settle it.
-3. **What is the third fluorescent protein?** It is **not** HaloTag. See
-   [sequence analysis](docs/02-sequence-analysis.md).
-4. **Does a per-gene floor prevent gene abandonment** without costing aggregate accuracy?
-5. **Would PRO-cap-based design give strand specificity** without the H3K4me1/H3K4me3
+3. **Does a per-gene floor prevent gene abandonment** without costing aggregate accuracy?
+4. **Would PRO-cap-based design give strand specificity** without the H3K4me1/H3K4me3
    entanglement, which [correction 12](docs/08-corrections.md) shows makes the direct approach fail?
+5. **Does suppressing reverse-strand CAGE fix the divergent-initiation defect?** Arm B's mScarlet
+   promoter scores 0.566 on the orientation index with forward 20.77 against reverse 15.91. Borzoi
+   carries CAGE− (track 307) and this work only ever optimized CAGE+, so the term is available and
+   untested. See [docs/10 §7](docs/10-multitrack-chromatin.md).
 
 ### Answered since first publication
 
+- **What is the third fluorescent protein?** **TagBFP** — blue, not red. The 233-aa translation is
+  an exact match to the FPbase record (233/233 residues, zero substitutions, against all 1,042
+  proteins; runner-up mTagBFP2 at 98.3%). It is **not** HaloTag, as the lab's file names say, and
+  the `RFP3` label used throughout this repository is a misnomer kept for continuity. TagBFP is
+  engineered from TagRFP and 94.3% identical to it, which is why the sequence read as red-family.
+  Emission at 457 / 507 / 594 nm across the three genes means flow cytometry can read all three
+  levels at once. Slide 45's GFP/BFP/RFP schematic was correct. See
+  [correction 14](docs/08-corrections.md).
 - **What flanking context does the lab's pipeline use?** Random genomic loci. Tested across ten
   real loci: safe, 1.55× spread, AAVS1 at the median. The 437× warning applies to *synthetic*
   padding only. See [correction 10](docs/08-corrections.md).
