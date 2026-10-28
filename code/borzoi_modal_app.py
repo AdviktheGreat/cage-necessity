@@ -45,6 +45,11 @@ def readouts(y, tracks=("CAGE+","CAGE-","DNase","DNase2","RNA+","RNA-","chrRNA+"
         for g,(a,z) in GENES.items():
             tb=(a-128)//BINW; lo,hi=max(0,tb-4),tb+6
             out[f"{n}|{g}"] = float(p[a//BINW:-(-z//BINW)].mean()) if n in ("RNA+","RNA-","chrRNA+") else float(p[lo:hi].max())
+            if n in ("RNA+","RNA-","chrRNA+"):
+                # The RNA objective spans 5'UTR + CDS + 3'UTR (slide 51: 128 bp and
+                # 1056 bp), so report that window too. The CDS-only mean above covers
+                # roughly a third of what was actually optimised.
+                out[f"{n}utr|{g}"] = float(p[tb:(z+1056)//BINW+1].mean())
             if n in ("CAGE+","CAGE-"):
                 # Slide 50 describes the CAGE objective as an AREA over the 5'UTR plus
                 # 32 bp (~160 bp, 5 bins), not a peak height at one bin. Reporting both
@@ -154,6 +159,8 @@ LADDER  = {"eGFP":1.4, "mScarlet":1.0, "RFP3":0.6}
 TSCALE  = {"CAGE+":20.0,"RNA+":5.0,"chrRNA+":5.0,"DNase":3.2,"H3K4me3":17.0,
            "H3K9ac":10.0,"TBP":16.7,"Pol2S5":16.7,"Pol2A":22.3,"H3K4me1":5.0}
 
+AREA_CAGE = False
+
 def target_profiles(track_names):
     import numpy as np
     prof = np.zeros((len(track_names), NB), dtype="float32")
@@ -161,7 +168,13 @@ def target_profiles(track_names):
         for g,(a,z) in GENES.items():
             tb=(a-128)//BINW; bz=(z+1056)//BINW
             if tn in ("CAGE+",):
-                prof[ti, tb] = TGT_CAGE[g]
+                if AREA_CAGE:
+                    # Slide 50 reads as an area over the 5'UTR plus 32 bp. Spreading the
+                    # requested value over those 5 bins preserves the area while asking
+                    # for an initiation zone instead of a single-bin spike.
+                    prof[ti, tb:tb+5] = TGT_CAGE[g] / 5.0
+                else:
+                    prof[ti, tb] = TGT_CAGE[g]
             elif tn in ("RNA+","chrRNA+"):
                 prof[ti, tb:bz+1] = TGT_RNA[g]
             elif tn in TGT_AMP:
@@ -173,7 +186,9 @@ def design(arm="B_cage_rna", flank="aavs1", init="control", max_iter=600,
            l=1e-3, lr=0.5, batch_size=2, rep=0, seed=0):
     import torch, numpy as np
     from ledidi import Ledidi
-    weights = OBJ[arm]; track_names = list(weights.keys())
+    global AREA_CAGE
+    AREA_CAGE = arm.endswith("_area")
+    weights = OBJ[arm.replace("_area","")]; track_names = list(weights.keys())
     tids = [TR[t] for t in track_names]
     wv = [weights[t] for t in track_names]
     if arm in NORM_ARMS:

@@ -31,6 +31,7 @@ OBJ = {
     "I_rna_multichrom_antienh": "RNA + 6 marks + H3K4me1 suppressed",
     "G_cage_rna_dw": "CAGE (x0.25) + RNA",
     "B_cage_rna": "CAGE + RNA",
+    "B_cage_rna_area": "CAGE + RNA, CAGE as a 5-bin area",
     "B_cage_rna_i2400": "CAGE + RNA, 2400 iterations",
     "B_cage_rna_l0.0001": "CAGE + RNA, edit penalty 1e-4",
     "B_cage_rna_l1e-05": "CAGE + RNA, edit penalty 1e-5",

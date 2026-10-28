@@ -370,3 +370,66 @@ statement is that they are promoter-like in initiation directionality and
 enhancer-like in chromatin character, and the two properties come apart. `final`
 remains the only design that satisfies both, and the reason it does is still
 unexplained.
+
+## 8. What the objective actually specifies, window by window
+
+Prompted by a direct question from the authors: does this reimplementation enforce
+5′ and 3′ UTR lengths, since the original designs set UTR coordinates in order to
+specify RNA level across 5′UTR + CDS + 3′UTR?
+
+Audit of `target_profiles()`:
+
+| Component | This work | Source deck | Match? |
+|---|---|---|---|
+| TSS position | ATG − 128 | slide 51: 128 bp 5′UTR | **yes** |
+| RNA window | TSS → CDS end + 1056, 60 bins ≈ 1,920 bp | slide 50: ~1,900 bp, ~60 bins; slide 51: 1,056 bp 3′UTR | **yes** |
+| **CAGE window** | **1 bin (32 bp) at the TSS** | **slide 50: area over 5′UTR + 32 bp, 5 bins** | **no** |
+
+So the RNA half of the objective does enforce the UTR geometry and matches the
+deck. The CAGE half does not: it asks for a single-bin spike where the deck
+describes an area. That is the mechanical cause of the breadth gap in
+[§7](#7-initiation-directionality-the-discriminator-cage-does-constrain) — the short
+arms here score 1.04–1.07 on area ÷ peak, meaning all initiation in one 32 bp bin,
+against 2.14 for the lab's `final`.
+
+A reporting inconsistency was also found and fixed: RNA was **optimised** over the
+full 60-bin window but **reported** as a mean over the CDS only, about a third of
+it. Reporting both windows shows this does not matter — the two agree within 7% on
+every design (ratio 1.01–1.07) — so no RNA conclusion changes. Both are now
+recorded.
+
+### Testing the area target directly
+
+Arm B rerun with CAGE spread over 5 bins at one fifth the amplitude, preserving the
+requested area, everything else identical:
+
+| | edits | CAGE % | **breadth** | **me3/me1** | orientation | genes lost |
+|---|---|---|---|---|---|---|
+| B, CAGE as a 1-bin spike | 689 | 107.6 | **1.07** | 0.41 | 0.838 | 0 |
+| **B, CAGE as a 5-bin area** | 648 | 52.6 | **2.98** | **0.49** | 0.844 | **1** |
+| lab's `final` | 2,909 | 112.1 | 2.14 | **3.60** | 0.993 | 0 |
+
+**The shape hypothesis is confirmed and the promoter-identity hypothesis is not.**
+Broadening the target does broaden the result, from 1.07 to 2.98, overshooting the
+lab's 2.14. But promoter character moves only 0.41 → 0.49, against 3.60. Initiation
+breadth is now ruled out **causally**, not just correlationally: breadth was
+manipulated directly and chromatin character did not follow.
+
+Two side effects worth recording:
+
+**It fixed the divergent-initiation defect.** Arm B's mScarlet promoter scores 0.566
+on the orientation index with a spike target (forward 20.77, reverse 15.91). With
+the area target it scores **0.866** (forward 8.82, reverse 1.36). Asking for a zone
+rather than a point removed the bidirectionality, which is consistent with a spike
+being satisfiable by an enhancer.
+
+**It cost a gene and most of the magnitude.** TagBFP collapsed to 0.73 against a
+target of 12, and total CAGE fell to 52.6%. A flat 5-bin target at one fifth
+amplitude is a harder request than a single bin at full amplitude, and the optimiser
+paid for it by abandoning the third gene — the same failure mode as
+[§3](#3-gene-abandonment-is-the-default-not-an-accident).
+
+So the correct CAGE window is worth asking the authors about, and it is **not** the
+explanation for promoter identity. That now survives five tests: budget, edit
+penalty, explicit chromatin terms, initiation breadth by correlation, and
+initiation breadth by direct manipulation.
