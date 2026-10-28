@@ -243,8 +243,12 @@ def design(arm="B_cage_rna", flank="aavs1", init="control", max_iter=600,
     data.commit()
     return res
 
-HELDOUT = ("CAGE+","CAGE2+","DNase","DNase2","DNase3","DNase4","RNA+","RNA-",
-           "chrRNA+","nucRNA+","Pol2S5","Pol2A","H3K4me3","TBP",
+# CAGE- matters on its own: the published promoter-versus-enhancer discriminator is
+# the orientation index, the fraction of initiation on the stronger strand, and that
+# needs both strands at the same position. mRNA promoters initiate unidirectionally;
+# enhancers initiate divergently.
+HELDOUT = ("CAGE+","CAGE-","CAGE2+","DNase","DNase2","DNase3","DNase4","RNA+","RNA-",
+           "chrRNA+","chrRNA-","nucRNA+","Pol2S5","Pol2A","H3K4me3","TBP",
            "H3K4me1","H3K9ac","H3K27me3","H3K36me3","EP300")
 
 @app.function(image=image, gpu="A100-80GB", volumes={"/data":data,"/cache":hfc}, timeout=5400)

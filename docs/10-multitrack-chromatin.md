@@ -300,3 +300,73 @@ With only two loci above 44% GC, these coefficients should not be interpreted.
    iterations reaches 3.60, the objective is fine and the arms were simply short.
 4. **PRO-cap-based design** for strand specificity without the H3K4me1/H3K4me3
    entanglement. See the ProCapNet route in [conclusions](07-conclusions.md).
+
+## 7. Initiation directionality: the discriminator CAGE does constrain
+
+Sections 1–6 used H3K4me3/H3K4me1 as the promoter-versus-enhancer test. That was
+a proxy, chosen because it was available. The published discriminator is the
+**orientation index** — the fraction of initiation on the stronger strand at a
+given site. Mikhaylichenko et al. 2018 (*Genes Dev*) put the boundaries at **≥0.8
+unidirectional**, characteristic of mRNA promoters, and **≤0.6 divergent**,
+characteristic of enhancers, and note that bidirectional promoters often act as
+strong enhancers while unidirectional ones generally cannot.
+
+This repository had never measured it, because the reverse-strand CAGE track was
+missing from the scored set. Adding it (track 307, K562 CAGE−) gives:
+
+| Objective | eGFP | mScarlet | RFP3 | mean OI | verdict | CAGE % |
+|---|---|---|---|---|---|---|
+| starting point | 0.671 | 0.518 | 0.544 | **0.578** | divergent | 0.3 |
+| F RNA+Pol2S5 | 0.650 | 0.527 | 0.624 | 0.600 | divergent | 1.1 |
+| A RNA only | 0.718 | 0.580 | 0.599 | 0.632 | intermediate | 5.0 |
+| E RNA+chrRNA | 0.753 | 0.586 | 0.658 | 0.666 | intermediate | 42.3 |
+| C RNA+DNase | 0.766 | 0.634 | 0.650 | 0.683 | intermediate | 5.3 |
+| K RNA+6 marks raw | 0.798 | 0.575 | 0.725 | 0.699 | intermediate | 4.5 |
+| H RNA+6 marks | 0.820 | 0.640 | 0.768 | 0.743 | intermediate | 3.9 |
+| I RNA+6 marks+me1↓ | 0.849 | 0.662 | 0.769 | **0.760** | intermediate | 2.4 |
+| B CAGE+RNA | 0.963 | **0.566** | 0.984 | **0.838** | unidirectional | 107.6 |
+| J CAGE+RNA+chrRNA | 0.900 | 0.754 | 0.959 | 0.871 | unidirectional | 110.9 |
+| N +me3↑/me1↓ | 0.922 | 0.911 | 0.828 | 0.887 | unidirectional | 75.5 |
+| L J+me1↓ | 0.988 | 0.805 | 0.878 | 0.890 | unidirectional | 46.6 |
+| G CAGE(×0.25)+RNA | 0.962 | 0.801 | 0.986 | 0.916 | unidirectional | 61.7 |
+| M CAGE+RNA+me1↓ | 0.996 | 0.989 | 0.815 | 0.933 | unidirectional | 70.1 |
+| J, `l`=1e-5 | 0.972 | 0.926 | 0.954 | 0.951 | unidirectional | 113.4 |
+| B, `l`=1e-5 | 0.983 | 0.963 | 0.986 | 0.977 | unidirectional | 104.0 |
+| **lab's `final`** | **0.994** | **0.993** | **0.991** | **0.993** | unidirectional | 112.1 |
+
+**The split is clean and has no overlap.** Every objective without CAGE tops out at
+0.760. Every objective with CAGE starts at 0.838. Eight CAGE-free objectives, nine
+CAGE-containing, no exceptions in either direction.
+
+So CAGE does constrain a genuine promoter property, and it is this one. Without
+it the designed sites initiate in both directions, which is enhancer behaviour.
+
+### Three consequences
+
+**1. Arm B has a defect nothing else detected.** Its mScarlet promoter scores
+**0.566**, below the divergent threshold. Per-strand: forward 20.77, reverse
+**15.91**. The CAGE target was met at 104% of its own value, the arm holds the
+intended ladder in 11 of 11 genomic contexts, and the middle gene is still firing
+almost equally in both directions. In a cell that is an antisense transcript at
+comparable strength to the sense one. A single summed-over-genes CAGE term does not
+notice.
+
+**2. Directionality and chromatin character are separate axes.** Over 17 designs
+the orientation index and H3K4me3/H3K4me1 correlate at only Spearman **+0.505**.
+Arm B at `l`=1e-5 scores 0.977 on directionality, the second best in the set, and
+0.21 on chromatin, the worst in the set. Scoring one does not tell you the other.
+
+**3. The lab's `final` is the only design good on both.** 0.993 and 3.60. Its
+antisense CAGE is 0.11–0.19 against 14.71–31.57 sense, so forward:reverse ratios of
+112 to 178. On directionality the short arms are closer to it than the chromatin
+proxy suggested, but nothing matches it on both axes at once.
+
+### What this corrects
+
+[Correction 9](08-corrections.md) concluded, from H3K4me3/H3K4me1 alone, that every
+arm here is enhancer-like. On the orientation index that is **too harsh**: the
+CAGE-containing arms are unidirectional by the published criterion. The accurate
+statement is that they are promoter-like in initiation directionality and
+enhancer-like in chromatin character, and the two properties come apart. `final`
+remains the only design that satisfies both, and the reason it does is still
+unexplained.
