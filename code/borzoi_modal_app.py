@@ -141,6 +141,16 @@ OBJ = {
   # identity an explicit requirement (H3K4me3 up, H3K4me1 down) rather than
   # something that emerges from a long enough run.
   "N_cage_rna_promoteridentity": {"CAGE+":1.0, "RNA+":1.0, "H3K4me3":2.0, "H3K4me1":2.0},
+  # Suppress initiation on the reverse strand. target_profiles leaves CAGE- at
+  # zero, so weighting it asks for forward-only initiation. This targets the
+  # promoter-versus-enhancer property directly, through initiation directionality,
+  # rather than through the H3K4 marks that arm N showed cannot be moved apart.
+  "O_cage_rna_fwdonly": {"CAGE+":1.0, "RNA+":1.0, "CAGE-":2.0},
+  # With a per-gene floor in place, both the forward-only term and H3K4me1
+  # suppression stop costing a gene, so combine them. Each fixes a different
+  # property: CAGE- suppression gives directionality, H3K4me1 suppression gives
+  # promoter rather than enhancer chromatin.
+  "Q_cage_rna_fwdonly_antienh": {"CAGE+":1.0, "RNA+":1.0, "CAGE-":2.0, "H3K4me1":3.0},
 }
 # Multi-track arms normalise each track by its scale so high-amplitude marks
 # (Pol2A ~22) cannot swamp RNA (~7) through units alone.
@@ -160,6 +170,10 @@ TSCALE  = {"CAGE+":20.0,"RNA+":5.0,"chrRNA+":5.0,"DNase":3.2,"H3K4me3":17.0,
            "H3K9ac":10.0,"TBP":16.7,"Pol2S5":16.7,"Pol2A":22.3,"H3K4me1":5.0}
 
 AREA_CAGE = False
+# Fraction of its own CAGE target that each gene must individually reach before
+# the floor penalty stops applying.
+FLOOR_FRAC = 0.6
+
 
 def target_profiles(track_names):
     import numpy as np
@@ -187,11 +201,13 @@ def design(arm="B_cage_rna", flank="aavs1", init="control", max_iter=600,
     import torch, numpy as np
     from ledidi import Ledidi
     global AREA_CAGE
-    AREA_CAGE = arm.endswith("_area")
-    weights = OBJ[arm.replace("_area","")]; track_names = list(weights.keys())
+    use_floor = "_floor" in arm
+    base_arm = arm.replace("_area", "").replace("_floor", "")
+    AREA_CAGE = "_area" in arm
+    weights = OBJ[base_arm]; track_names = list(weights.keys())
     tids = [TR[t] for t in track_names]
     wv = [weights[t] for t in track_names]
-    if arm in NORM_ARMS:
+    if base_arm in NORM_ARMS:
         # Per-track scale normalisation, then rescaled so the summed objective
         # weight matches an unnormalised arm. Without the rescale the whole
         # objective shrinks by ~1/scale^2 and the edit penalty blocks every edit.
@@ -224,8 +240,44 @@ def design(arm="B_cage_rna", flank="aavs1", init="control", max_iter=600,
 
     y_bar = torch.from_numpy(target_profiles(track_names))[None].cuda() * w.sqrt()
 
+    if use_floor:
+        class MSEWithGeneFloor(torch.nn.Module):
+            """MSE plus a one-sided penalty per gene.
+
+            The plain objective sums error over all three genes, so abandoning one
+            and overdelivering on the other two is a legal way to score well, and
+            the optimiser takes that trade whenever a new term is added. This adds
+            a hinge that activates only when a gene falls below its own floor,
+            leaving the optimiser free above it.
+            """
+
+            def __init__(self, row, bins, floors, strength=10.0):
+                super().__init__()
+                self.row = row
+                self.bins = list(bins)
+                self.strength = strength
+                self.register_buffer("floors", torch.tensor(floors, dtype=torch.float32))
+
+            def forward(self, y_pred, y_true):
+                mse = ((y_pred - y_true) ** 2).mean()
+                pen = y_pred.new_zeros(())
+                for i, tb in enumerate(self.bins):
+                    got = y_pred[:, self.row, tb:tb + 5].sum(-1)
+                    pen = pen + torch.relu(self.floors[i] - got).pow(2).mean()
+                return mse + self.strength * pen / max(len(self.bins), 1)
+
+        crow = track_names.index("CAGE+")
+        # Both the prediction and the floor live in the sqrt(weight)-scaled space
+        # the Head emits, so the floor has to be scaled the same way.
+        s = float(wv[crow]) ** 0.5
+        bins = [(a - 128) // BINW for a, _ in GENES.values()]
+        floors = [FLOOR_FRAC * TGT_CAGE[g] * s for g in GENES]
+        loss_fn = MSEWithGeneFloor(crow, bins, floors).cuda()
+    else:
+        loss_fn = torch.nn.MSELoss()
+
     torch.manual_seed(seed)
-    led = Ledidi(head, shape=(4,524288), output_loss=torch.nn.MSELoss(),
+    led = Ledidi(head, shape=(4,524288), output_loss=loss_fn,
                  input_mask=mask_t, l=l, lr=lr, batch_size=batch_size,
                  max_iter=max_iter, early_stopping_iter=max_iter,
                  report_iter=50, verbose=True, random_state=seed).cuda()

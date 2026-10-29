@@ -32,6 +32,13 @@ OBJ = {
     "G_cage_rna_dw": "CAGE (x0.25) + RNA",
     "B_cage_rna": "CAGE + RNA",
     "B_cage_rna_area": "CAGE + RNA, CAGE as a 5-bin area",
+    "B_cage_rna_floor": "CAGE + RNA + per-gene floor",
+    "O_cage_rna_fwdonly": "CAGE + RNA + CAGE- suppressed",
+    "O_cage_rna_fwdonly_area": "CAGE + RNA + CAGE- suppressed, area target",
+    "O_cage_rna_fwdonly_floor": "CAGE + RNA + CAGE- suppressed + floor",
+    "M_cage_rna_antienh_floor": "CAGE + RNA + H3K4me1 suppressed + floor",
+    "N_cage_rna_promoteridentity_floor": "CAGE + RNA + H3K4me3 up + H3K4me1 down + floor",
+    "Q_cage_rna_fwdonly_antienh_floor": "CAGE + RNA + CAGE- and H3K4me1 suppressed + floor",
     "B_cage_rna_i2400": "CAGE + RNA, 2400 iterations",
     "B_cage_rna_l0.0001": "CAGE + RNA, edit penalty 1e-4",
     "B_cage_rna_l1e-05": "CAGE + RNA, edit penalty 1e-5",
@@ -96,7 +103,9 @@ def main():
     cols = (["design", "objective", "n_edits",
              "cage_pct_of_target_AREA", "cage_pct_of_target_PEAK", "rna_pct_of_target"]
             + [f"cage_area_{g}" for g in G] + [f"cage_peak_{g}" for g in G]
-            + ["initiation_breadth", "genes_lost", "h3k4me3_max", "h3k4me1_max",
+            + [f"orient_index_{g}" for g in G]
+            + ["orient_index_mean", "orient_index_min",
+               "initiation_breadth", "genes_lost", "h3k4me3_max", "h3k4me1_max",
                "me3_over_me1", "ep300_max", "dnase_max", "pol2a_max", "tbp_max",
                "strand_ratio"])
 
@@ -112,6 +121,12 @@ def main():
         rm = sum(r[f"RNA-|{g}"] for g in G)
         # Breadth near 1.0 means the whole CAGE signal sits in one 32 bp bin.
         breadth = sum(a / max(p, 1e-9) for a, p in zip(area, peak)) / 3
+        # Orientation index: fraction of initiation on the stronger strand.
+        # Mikhaylichenko 2018: >=0.8 unidirectional (mRNA promoter), <=0.6 divergent
+        # (enhancer). The minimum across genes matters more than the mean, since one
+        # divergent promoter is a defect the mean hides.
+        rev = [r.get(f"CAGE-area|{g}", 0.0) for g in G]
+        ois = [max(a, m) / (a + m) if (a + m) > 1e-6 else 0.0 for a, m in zip(area, rev)]
         lost = sum(1 for g in G if r[f"CAGE+|{g}"] < 0.10 * TGT_CAGE[g])
         rows.append({
             "design": d, "objective": o,
@@ -121,6 +136,9 @@ def main():
             "rna_pct_of_target": round(100 * rp / 15.0, 1),
             **{f"cage_area_{g}": round(a, 2) for g, a in zip(G, area)},
             **{f"cage_peak_{g}": round(p, 2) for g, p in zip(G, peak)},
+            **{f"orient_index_{g}": round(o, 3) for g, o in zip(G, ois)},
+            "orient_index_mean": round(sum(ois) / 3, 3),
+            "orient_index_min": round(min(ois), 3),
             "initiation_breadth": round(breadth, 2),
             "genes_lost": lost,
             "h3k4me3_max": round(mx("H3K4me3"), 2),

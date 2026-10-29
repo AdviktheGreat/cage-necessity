@@ -309,6 +309,48 @@ work assumed when the third protein was thought to be a second red.
 **Note on naming.** The identifier `RFP3` is kept throughout the code, data files
 and tables for continuity with earlier results. It refers to TagBFP.
 
+### 15. "An explicit chromatin term cannot work in Borzoi" — retracted, it was gene abandonment
+
+[Correction 12](#12-an-explicit-h3k4me3-up--h3k4me1-down-term-would-make-promoter-identity-a-requirement--retracted)
+retracted the recommendation to constrain H3K4me3/H3K4me1 explicitly, concluding
+that "the promoter-versus-enhancer distinction appears to be unreachable through
+Borzoi's H3K4 tracks, whatever weighting is used." **That conclusion was wrong,
+and the reason is instructive.**
+
+Arm N lost TagBFP. So did arm M, the 5-bin area arm, and the reverse-strand arm.
+Every chromatin and directionality term tested dropped one gene below 10% of its
+target, because the loss sums over genes and sacrificing one is a cheap way to
+fund a new requirement. The chromatin readouts were then measured on a construct
+with a dead gene.
+
+Adding a per-gene floor — a hinge penalty that activates only below 60% of each
+gene's own CAGE target — changes the result completely:
+
+| Objective | floor | genes lost | **H3K4me3/H3K4me1** |
+|---|---|---|---|
+| CAGE+RNA | no | 0 | 0.41 |
+| CAGE+RNA + H3K4me1 suppressed | no | **1** | 0.78 |
+| **CAGE+RNA + H3K4me1 suppressed** | **yes** | **0** | **10.07** |
+| lab's `final` | — | 0 | 3.60 |
+
+**10.07, against the lab's 3.60.** The chromatin term does exactly what was
+originally claimed for it. It had been judged on a run where the optimiser spent
+the gene instead.
+
+**What this means for the earlier corrections.** Five negative results in
+[docs/10](10-multitrack-chromatin.md) were measured on gene-abandoning designs and
+are therefore unsafe: the area target, reverse-strand suppression, H3K4me1
+suppression, the H3K4me3↑/H3K4me1↓ pair, and the breadth manipulation. The
+per-gene floor should have been the *first* thing tested after
+[§3](10-multitrack-chromatin.md) identified abandonment, not the last.
+
+**What survives.** The terms still do not compose — combining reverse-strand and
+H3K4me1 suppression gives 2 of 5 criteria, worse than either alone — and RNA falls
+monotonically as terms are added (98.2 → 54.3%), because with abandonment blocked
+the optimiser pays out of transcript level. The lab's `final` remains the only
+design of 27 that satisfies all five criteria simultaneously, and that is still
+unexplained.
+
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required

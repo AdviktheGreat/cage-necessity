@@ -433,3 +433,82 @@ So the correct CAGE window is worth asking the authors about, and it is **not** 
 explanation for promoter identity. That now survives five tests: budget, edit
 penalty, explicit chromatin terms, initiation breadth by correlation, and
 initiation breadth by direct manipulation.
+
+## 9. A per-gene floor, and why five earlier negative results were confounded
+
+Every term added to the objective in §1–§8 cost a gene: H3K4me1 suppression,
+H3K4me3↑/H3K4me1↓, the 5-bin area target, and reverse-strand suppression all
+dropped one gene below 10% of its own CAGE target. [§3](#3-gene-abandonment-is-the-default-not-an-accident)
+identified the cause — the loss sums error over genes, so abandoning one and
+overdelivering on two is legal — and proposed a per-gene floor as the fix. It was
+never tested. It is now.
+
+The floor is a one-sided hinge: a gene contributes nothing while it is above 60% of
+its own CAGE target, and a quadratic penalty below it.
+
+```python
+got = y_pred[:, cage_row, tb:tb + 5].sum(-1)
+pen = pen + torch.relu(floor_g - got).pow(2).mean()
+```
+
+### It rescues both terms that had been written off
+
+| Objective | floor | CAGE % | RNA % | **me3/me1** | min OI | genes lost |
+|---|---|---|---|---|---|---|
+| CAGE+RNA | no | 107.6 | 98.2 | 0.41 | 0.566 | 0 |
+| CAGE+RNA | **yes** | 77.4 | 94.3 | **0.90** | 0.569 | 0 |
+| + reverse-strand suppressed | no | 72.9 | 97.9 | 0.34 | 0.708 | **1** |
+| + reverse-strand suppressed | **yes** | **114.1** | 84.3 | 0.83 | **0.915** | **0** |
+| + H3K4me1 suppressed | no | 70.1 | 97.7 | 0.78 | 0.815 | **1** |
+| + H3K4me1 suppressed | **yes** | 99.1 | 72.9 | **10.07** | 0.601 | **0** |
+| lab's `final` | — | 112.1 | 131.6 | 3.60 | 0.991 | 0 |
+
+**Both previously-failing terms work once the optimiser cannot pay for them with a
+gene.** Reverse-strand suppression goes from losing TagBFP at 72.9% CAGE to keeping
+all three genes at **114.1%** with the best directionality produced here (0.915).
+H3K4me1 suppression goes from 0.78 promoter character to **10.07**, nearly three
+times the lab's 3.60 and the first design in this work that is strongly
+promoter-like rather than enhancer-like.
+
+The floor alone, with no other change, more than doubles promoter character
+(0.41 → 0.90).
+
+### What this corrects
+
+[Correction 12](08-corrections.md) retracted the recommendation to constrain
+H3K4me3/H3K4me1 explicitly, on the evidence that arm N made things worse. That
+retraction was itself confounded: arm N lost a gene, and the loss of the gene is
+what destroyed the chromatin signal. With a floor the chromatin term does what was
+originally claimed for it. See [correction 15](08-corrections.md).
+
+Five negative results in this document — the area target, reverse-strand
+suppression, H3K4me1 suppression, the H3K4me3↑/H3K4me1↓ pair, and the breadth
+manipulation — were all measured on designs that had abandoned a gene. **Gene
+abandonment was the confound, not the terms.**
+
+### The terms still do not compose
+
+| Objective | CAGE % | RNA % | me3/me1 | min OI | criteria met |
+|---|---|---|---|---|---|
+| + reverse-strand, floor | 114.1 | 84.3 | 0.83 | 0.915 | 3 / 5 |
+| + H3K4me1, floor | 99.1 | 72.9 | **10.07** | 0.601 | 3 / 5 |
+| + H3K4me3↑/H3K4me1↓, floor | 89.2 | 54.1 | 0.68 | 0.640 | 2 / 5 |
+| **+ reverse-strand AND H3K4me1, floor** | 75.5 | **54.3** | 0.80 | 0.877 | **2 / 5** |
+| **lab's `final`** | 112.1 | 131.6 | 3.60 | 0.991 | **5 / 5** |
+
+Criteria: CAGE 85–125% of target, RNA 85–135%, all three genes retained, min
+orientation index ≥ 0.8, H3K4me3/H3K4me1 > 1.5.
+
+Combining the two terms that each work individually produces something worse than
+either. And the cost is now visible in one column: **RNA falls monotonically as
+terms are added** — 98.2, 94.3, 84.3, 72.9, 54.1, 54.3. With the floor blocking
+gene abandonment, the optimiser pays for each new requirement out of transcript
+level instead.
+
+**Across 27 designs and 19 objective variants, the lab's `final` is the only one
+that satisfies all five criteria at once.** This work can now match or beat it on
+any single axis — 114.1% versus 112.1% on CAGE, 10.07 versus 3.60 on promoter
+character — and cannot get them together. `final` sits at RNA 131.6%,
+*overdelivering* while every loaded objective here undershoots, which suggests it
+found a sequence that satisfies everything rather than a point on a trade-off
+curve. How it did that is still the open question.

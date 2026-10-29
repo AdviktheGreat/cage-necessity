@@ -14,7 +14,7 @@ Status: complete for the questions below; two items still open (see [Open questi
 
 ## TL;DR
 
-Nine findings, in rough order of importance.
+Eleven findings, in rough order of importance.
 > **Reading the numbers below.** Every "% of CAGE target" in this README is a **peak height** in a
 > 10-bin window at the TSS. The source deck's slide 50 implies the objective is an **area** over
 > ~160 bp. The choice matters: the lab's `final` is at 55% of target as a peak and **112% as an
@@ -32,6 +32,8 @@ Nine findings, in rough order of importance.
 | 7 | **Hitting the CAGE target is not the same as building a promoter.** Scored on H3K4me3/H3K4me1, the lab's `final` is **3.60** and every 600-iteration arm here is **≤0.91** — enhancer-like. The arm with the best CAGE attainment (100% of target) has nearly the worst promoter character. The lab's larger edit count is what promoter identity costs. | [Promoter identity](docs/10-multitrack-chromatin.md#4-promoter-identity-final-is-the-only-design-that-has-it), [correction 9](docs/08-corrections.md) |
 | 8 | **An independent model confirms the designed sequences carry real initiation syntax.** Scored against ProCapNet's K562 PRO-cap motifs — different model, data and authors — CAGE attainment correlates with initiation-motif content at **Spearman +0.850**. Every CAGE-free arm sits at the 137-motif baseline; every CAGE-containing arm is above it. | [Cross-model check](docs/10-multitrack-chromatin.md#5-cross-model-check-procapnets-motifs-independent-of-borzoi) |
 | 9 | **Added constraints make the optimizer abandon a gene rather than degrade all three.** Only **3 of 12** objectives keep all three genes above 10% of their own CAGE target. The failures use *more* edits, so it is an active trade, not under-convergence. A per-gene floor would close it. | [Gene abandonment](docs/10-multitrack-chromatin.md#3-added-constraints-make-the-optimiser-abandon-a-gene) |
+| 10 | **A per-gene floor is the single most valuable change to the objective, and its absence invalidated five earlier negative results.** Every added term had been paid for by abandoning a gene. With a 60%-of-target hinge per gene, reverse-strand suppression goes from losing TagBFP at 72.9% CAGE to keeping all three at **114.1%** with the best directionality here (0.915), and H3K4me1 suppression goes from 0.78 to **10.07** promoter character against the lab's 3.60. The floor alone more than doubles promoter character (0.41 → 0.90). | [docs/10 §9](docs/10-multitrack-chromatin.md), [correction 15](docs/08-corrections.md) |
+| 11 | **CAGE constrains initiation *direction*, which is the published promoter-versus-enhancer discriminator.** Orientation index across 8 CAGE-free objectives: 0.578–0.760. Across 9 CAGE-containing: 0.838–0.993. No overlap. The lab's `final` is 0.993. This is a sharper answer than magnitude alone, and it is what PRO-cap measures natively at 1 bp. | [docs/10 §7](docs/10-multitrack-chromatin.md) |
 
 ---
 
@@ -286,13 +288,12 @@ one model, so the offset does not affect any conclusion.
 2. **Is the CAGE objective an area or a peak, and over exactly which window?** Scoring it as a
    5-bin area moves `final` from 55% to 112% of target, so this single choice changes the headline
    comparison. Slide 50 implies an area; confirming the exact window would settle it.
-3. **Does a per-gene floor prevent gene abandonment** without costing aggregate accuracy?
-4. **Would PRO-cap-based design give strand specificity** without the H3K4me1/H3K4me3
-   entanglement, which [correction 12](docs/08-corrections.md) shows makes the direct approach fail?
-5. **Does suppressing reverse-strand CAGE fix the divergent-initiation defect?** Arm B's mScarlet
-   promoter scores 0.566 on the orientation index with forward 20.77 against reverse 15.91. Borzoi
-   carries CAGE− (track 307) and this work only ever optimized CAGE+, so the term is available and
-   untested. See [docs/10 §7](docs/10-multitrack-chromatin.md).
+3. **Why do the objective terms not compose?** With a per-gene floor, reverse-strand suppression
+   alone gives 114.1% CAGE and 0.915 directionality, and H3K4me1 suppression alone gives 10.07
+   promoter character. Combining them gives neither (75.5%, 0.80) and RNA collapses to 54.3%.
+   The lab's `final` achieves all five criteria at once and overdelivers on RNA at 131.6%.
+4. **Would PRO-cap-based design reach directionality more directly** than Borzoi's 32 bp CAGE bins,
+   given that it measures the orientation index natively at 1 bp?
 
 ### Answered since first publication
 
