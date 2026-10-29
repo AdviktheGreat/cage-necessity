@@ -88,19 +88,33 @@ only +0.351 / −0.041 / +0.169, and the DNase-sensitive bases sit 60–150 bp f
 upstream than the CAGE-sensitive ones. CAGE and DNase are not driven by the same
 bases. They are driven by the same *regional composition*.
 
-## 5. What this implies for the design loop
+## 5. What this implies for the design loop, and the test that refuted it
 
 CpG density is a **property of the sequence**, not a predicted readout. It can be
-constrained directly, for free, with no model in the loop.
+constrained directly, for free, with no model in the loop. The obvious implication
+was that the objective could be `RNA abundance` + a direct CpG constraint, with
+CAGE dropped, leaving exactly one predicted readout.
 
-So the authors' stated ideal is closer than it looks. Instead of `RNA + CAGE`,
-where CAGE is a predicted track standing in for something else, the objective could
-be **`RNA abundance` + a direct CpG-density constraint on each promoter window**.
-That keeps exactly one predicted readout, the one they want to specify, and
-replaces the CAGE proxy with the sequence feature CAGE was installing anyway.
+**That was tested and it does not work.** Full numbers in
+[correction 17](08-corrections.md). An RNA-only objective plus a one-sided CpG
+hinge targeting 25 CpGs per promoter window:
 
-**Untested.** This is a prediction from 96 windows. The next experiment is to run
-`RNA + CpG constraint` with no CAGE and check whether the DNase peaks appear.
+- **The constraint was met and accessibility still did not follow at two of three
+  promoters.** mScarlet reached 29 CpGs, more than the 20 in the lab's `final`,
+  and its DNase stayed at 0.13 against `final`'s 0.37. CpG count is not
+  sufficient.
+- **But eGFP went from 0.07 to 3.16 with no CAGE in the loss at all**, against 3.70
+  for the lab's design at that promoter. No CAGE-free objective had previously
+  exceeded 0.86. So an accessible promoter does not *require* CAGE in the
+  objective.
+- **Accessibility arrived without initiation.** CAGE stayed at 10.7–14.8% of
+  target. The result is an open CpG-rich region with no TSS.
+
+So the mediation result above is correct about what it measures and was read too
+strongly. CpG density is the channel through which CAGE acts *on accessibility*.
+CAGE is separately specifying where initiation happens and in which direction, and
+that has no CpG substitute. **Accessibility and initiation are two requirements,
+not one, and only the first has a free sequence-level proxy.**
 
 ## Caveats
 

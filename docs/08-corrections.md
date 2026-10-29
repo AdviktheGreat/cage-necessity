@@ -389,6 +389,59 @@ come from collapsing per-gene data to a single aggregate before correlating. The
 three genes behave differently enough that any statistic taking a maximum or a mean
 across them should be treated as suspect.
 
+### 17. "CpG density can replace CAGE in the objective" — refuted by direct test, same day it was proposed
+
+[docs/11](11-what-cage-is-doing.md) showed that CAGE's effect on accessibility is
+almost entirely mediated by CpG dinucleotide density, and concluded that the
+objective could therefore be RNA abundance plus a direct CpG constraint, with CAGE
+dropped. That was named as untested. It was then tested, and **the substitution
+does not work.**
+
+Two arms added a differentiable CpG hinge (one-sided, target 25 per 600 bp
+promoter window, the count the lab's own design reached) to an RNA-only objective,
+with no CAGE:
+
+| | eGFP CpG / DNase | mScarlet CpG / DNase | TagBFP CpG / DNase | CAGE % |
+|---|---|---|---|---|
+| control | 7 / 0.07 | 8 / 0.07 | 9 / 0.07 | 0.3 |
+| RNA only | 7 / 0.15 | 9 / 0.11 | 8 / 0.11 | 5.0 |
+| **RNA + CpG (w=0.25)** | 24 / **3.16** | 22 / 0.17 | 21 / 0.14 | 14.8 |
+| **RNA + CpG (w=1.0)** | 23 / **3.05** | **29** / **0.13** | **27** / **0.12** | 10.7 |
+| CAGE + RNA | 22 / 0.80 | 8 / 0.15 | 12 / 0.27 | 107.6 |
+| lab's `final` | 25 / 3.70 | 20 / 0.37 | 30 / 5.65 | 112.1 |
+
+**The constraint was satisfied and accessibility still did not follow.** At w=1.0
+mScarlet reached 29 CpGs, *more* than the 20 in the lab's `final`, and its DNase
+stayed at 0.13 while `final` reaches 0.37. TagBFP reached 27 against `final`'s 30
+and stayed at 0.12 while `final` reaches 5.65. This is not gene abandonment — the
+hinge is per window and all three were filled. **CpG count is simply not
+sufficient.**
+
+**What does survive, and it is not nothing.** eGFP went from 0.07 to **3.16** with
+no CAGE anywhere in the loss, against 3.70 for the lab's design at the same
+promoter. The previous best worst-case for any CAGE-free objective was 0.86, and
+across eight CAGE-free arms none had ever exceeded that. So **an accessible
+promoter does not require CAGE in the objective**, which is the first direct
+evidence on the authors' actual question, and it took one sequence constraint
+rather than a new model.
+
+**But accessibility arrived without initiation.** CAGE stayed at 10.7–14.8% of
+target in both CpG arms. The result is an open, CpG-rich region with no transcription
+start site, which is the enhancer-like failure mode seen throughout
+[docs/10](10-multitrack-chromatin.md). So the mediation result in docs/11 was read
+too strongly: CpG density is what carries CAGE's effect *on accessibility*, but
+CAGE is also specifying where and in which direction initiation happens, and that
+part has no CpG substitute. The two have to be specified separately.
+
+**Weak lead, not a finding.** Over these 12 windows, CpGs falling within 150 bp of
+the designed TSS track DNase at +0.764 while total CpGs in the window do not. That
+is 12 points with obvious confounds and should not be built on without a proper
+test, but it suggests *position relative to the TSS* matters more than density.
+
+**The process lesson.** This correction exists because a published implication was
+tested within the hour rather than being left to stand as a plausible suggestion.
+Correction 15 took fifteen experiments to find; this took one.
+
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required

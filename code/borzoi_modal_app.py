@@ -183,6 +183,13 @@ AREA_CAGE = False
 # the floor penalty stops applying.
 FLOOR_FRAC = 0.6
 
+# Accessibility turns out to track CpG dinucleotide density in the promoter window
+# more tightly than any predicted track or individual motif, and holding CpG fixed
+# removes almost all of CAGE's apparent effect on DNase (docs/11). CpG density is a
+# property of the sequence, not a model output, so it can be constrained directly.
+# The target is what the lab's own design reached; the untouched control sits at 8.
+CPG_WIN, TGT_CPG = 600, 25
+
 
 def target_profiles(track_names):
     import numpy as np
@@ -211,7 +218,12 @@ def design(arm="B_cage_rna", flank="aavs1", init="control", max_iter=600,
     from ledidi import Ledidi
     global AREA_CAGE
     use_floor = "_floor" in arm
+    # "_cpg<weight>" adds the sequence-level CpG constraint, e.g. A_rna_cpg1.
+    use_cpg = "_cpg" in arm
+    cpg_w = float(arm.split("_cpg")[1] or 1.0) if use_cpg else 0.0
     base_arm = arm.replace("_area", "").replace("_floor", "")
+    if use_cpg:
+        base_arm = base_arm.split("_cpg")[0]
     AREA_CAGE = "_area" in arm
     weights = OBJ[base_arm]; track_names = list(weights.keys())
     tids = [TR[t] for t in track_names]
@@ -228,9 +240,19 @@ def design(arm="B_cage_rna", flank="aavs1", init="control", max_iter=600,
     base = load(rep)
     for p in base.parameters(): p.requires_grad_(False)
 
+    # Absolute coordinates of the promoter windows the CpG term acts on.
+    cpg_spans = [(DESIGN_START + a - CPG_WIN, DESIGN_START + a) for a, _ in GENES.values()]
+
     class Head(torch.nn.Module):
-        def __init__(self, m): super().__init__(); self.m=m
+        def __init__(self, m): super().__init__(); self.m=m; self.cpg=None
         def forward(self, X):
+            if use_cpg:
+                # Differentiable CpG count: P(C at i) * P(G at i+1), summed over the
+                # window. Channel order is ACGT, so C is 1 and G is 2. Stashed here
+                # because Ledidi's output_loss only ever sees predictions, and this
+                # keeps it in the same autograd graph as the sequence.
+                self.cpg = torch.stack(
+                    [(X[:, 1, s:e - 1] * X[:, 2, s + 1:e]).sum(-1) for s, e in cpg_spans], -1)
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 y = self.m(X)
             return (y[:, tids, BIN0:BIN0+NB].float()) * w.sqrt()
@@ -284,6 +306,31 @@ def design(arm="B_cage_rna", flank="aavs1", init="control", max_iter=600,
         loss_fn = MSEWithGeneFloor(crow, bins, floors).cuda()
     else:
         loss_fn = torch.nn.MSELoss()
+
+    if use_cpg:
+        class WithCpGFloor(torch.nn.Module):
+            """Adds a one-sided CpG-density penalty on each promoter window.
+
+            Deficits are measured as a fraction of the target, so the term stays
+            on a comparable scale to the MSE regardless of the absolute count,
+            and nothing is charged for exceeding the target.
+            """
+
+            def __init__(self, inner, head, target, weight):
+                super().__init__()
+                self.inner = inner
+                # Kept out of the module tree so the 186M-parameter trunk is not
+                # registered as a submodule of the loss.
+                self._head = [head]
+                self.target = float(target)
+                self.weight = float(weight)
+
+            def forward(self, y_pred, y_true):
+                got = self._head[0].cpg
+                pen = torch.relu(1.0 - got / self.target).pow(2).mean()
+                return self.inner(y_pred, y_true) + self.weight * pen
+
+        loss_fn = WithCpGFloor(loss_fn, head, TGT_CPG, cpg_w).cuda()
 
     torch.manual_seed(seed)
     led = Ledidi(head, shape=(4,524288), output_loss=loss_fn,
