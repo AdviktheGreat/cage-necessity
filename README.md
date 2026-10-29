@@ -14,7 +14,7 @@ Status: complete for the questions below; two items still open (see [Open questi
 
 ## TL;DR
 
-Eleven findings, in rough order of importance.
+Twelve findings, in rough order of importance. Finding 12 answers the mechanistic question the authors actually posed.
 > **Reading the numbers below.** Every "% of CAGE target" in this README is a **peak height** in a
 > 10-bin window at the TSS. The source deck's slide 50 implies the objective is an **area** over
 > ~160 bp. The choice matters: the lab's `final` is at 55% of target as a peak and **112% as an
@@ -34,6 +34,7 @@ Eleven findings, in rough order of importance.
 | 9 | **Added constraints make the optimizer abandon a gene rather than degrade all three.** Only **3 of 12** objectives keep all three genes above 10% of their own CAGE target. The failures use *more* edits, so it is an active trade, not under-convergence. A per-gene floor would close it. | [Gene abandonment](docs/10-multitrack-chromatin.md#3-added-constraints-make-the-optimiser-abandon-a-gene) |
 | 10 | **A per-gene floor is the single most valuable change to the objective, and its absence invalidated five earlier negative results.** Every added term had been paid for by abandoning a gene. With a 60%-of-target hinge per gene, reverse-strand suppression goes from losing TagBFP at 72.9% CAGE to keeping all three at **114.1%** with the best directionality here (0.915), and H3K4me1 suppression goes from 0.78 to **10.07** promoter character against the lab's 3.60. The floor alone more than doubles promoter character (0.41 → 0.90). | [docs/10 §9](docs/10-multitrack-chromatin.md), [correction 15](docs/08-corrections.md) |
 | 11 | **CAGE constrains initiation *direction*, which is the published promoter-versus-enhancer discriminator.** Orientation index across 8 CAGE-free objectives: 0.578–0.760. Across 9 CAGE-containing: 0.838–0.993. No overlap. The lab's `final` is 0.993. This is a sharper answer than magnitude alone, and it is what PRO-cap measures natively at 1 bp. | [docs/10 §7](docs/10-multitrack-chromatin.md) |
+| 12 | **What CAGE is doing is installing CpG islands, and that is why accessibility follows.** CpG count is the best sequence predictor of DNase (Spearman +0.608, beating every motif; TATA is *negative*). Objectives with CAGE add +8.4 CpGs per promoter window vs +4.0 without; the lab's `final` adds +17. **Holding CpG fixed, CAGE explains almost nothing about accessibility (+0.102); holding CAGE fixed, CpG still explains a lot (+0.429).** Asking for DNase directly fails because it adds only 2 CpGs. Since CpG density is a sequence property rather than a predicted readout, it can be constrained directly for free. | [docs/11](docs/11-what-cage-is-doing.md) |
 
 ---
 
