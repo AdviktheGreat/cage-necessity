@@ -572,3 +572,78 @@ and a per-gene floor is what distributes it across all three promoters.**
 
 If DNase peaks are the independent confirmation the authors want, the floor is what
 makes that check pass everywhere rather than at two promoters out of three.
+
+## 11. How close can the objective get, and where it stops
+
+With a per-gene floor in place, the remaining question is whether the five
+properties can be bought by weighting. Adding terms had made RNA fall
+monotonically (98.2 → 54.3%), so the first test was whether that was a weighting
+choice or a real ceiling.
+
+**It was a weighting choice.** Upweighting RNA threefold recovers most of it at a
+modest chromatin cost:
+
+| Objective | CAGE % | RNA % | me3/me1 | min OI | criteria |
+|---|---|---|---|---|---|
+| H3K4me1 suppressed + floor | 99.1 | **72.9** | 10.07 | 0.601 | 3/5 |
+| **same + RNA×3** (arm R) | **108.4** | **87.4** | **7.31** | 0.782 | **4/5** |
+
+Arm R is the best design produced in this work: **4 of 5 criteria**, missing only
+directionality, and missing it by 0.018.
+
+### Arm R versus the lab's design
+
+| | **arm R** | lab's `final` |
+|---|---|---|
+| edits | **2,070** | 2,909 |
+| CAGE area per gene (target 28/20/12) | **30.10 / 21.80 / 13.11** | 31.57 / 14.71 / 20.96 |
+| RNA % of target | 87.4 | **131.6** |
+| H3K4me3 / H3K4me1 | **7.31** | 3.60 |
+| orientation index per gene | 0.782 / 0.831 / 0.960 | **0.994 / 0.993 / 0.991** |
+| DNase per gene | 0.90 / 0.57 / 0.13 | **3.70 / 0.37 / 5.65** |
+| criteria met | 4 / 5 | **5 / 5** |
+
+**Arm R beats `final` on the expression ladder and on promoter chromatin.** Its
+per-gene CAGE is within 10% of every target, where `final` undershoots mScarlet by
+26% and overshoots TagBFP by 75%. Its H3K4me3/H3K4me1 is double. It gets there in
+839 fewer edits.
+
+It loses on directionality (0.782 against 0.991), on RNA, and on accessibility.
+
+### The weight space is not smooth
+
+Arm R clears the directionality threshold if the reverse-strand term is added, but
+arm S — same objective with CAGE− weighted 2.0 — drops CAGE to 82.0%. The obvious
+move is to interpolate. Arm T sets that weight to 0.75:
+
+| | CAGE− weight | CAGE % | **min OI** | me3/me1 |
+|---|---|---|---|---|
+| R | 0.00 | 108.4 | **0.782** | 7.31 |
+| **T** | **0.75** | 83.6 | **0.585** | 7.94 |
+| S | 2.00 | 82.0 | **0.825** | 5.89 |
+
+**Arm T is worse than both endpoints on the property the term exists to control.**
+Directionality goes 0.782 → 0.585 → 0.825 as the reverse-strand weight increases,
+which is not monotonic, and T loses the CAGE magnitude as well without buying
+anything.
+
+So the objective weights cannot be tuned by interpolation. Each weighting lands in
+a different basin, and the outcome is not a smooth function of the weights. That is
+worth knowing before anyone tries a grid search: neighbouring weights do not give
+neighbouring designs.
+
+### Where this leaves the comparison
+
+Across **31 designs and 24 objective variants**, the lab's `final` is still the
+only one meeting all five criteria. But the claim has changed shape over the course
+of this work:
+
+- It started as "the short arms beat the lab's design" — retracted
+  ([correction 9](08-corrections.md)).
+- It became "nothing here is even promoter-like, and nothing can be made so" —
+  retracted ([correction 15](08-corrections.md)).
+- It is now: **one design reaches 4 of 5 and beats `final` on the ladder and on
+  promoter chromatin in 839 fewer edits, and the gap is directionality.**
+
+`final` remains the only design that gets everything at once, and the reason it
+does is still not explained by anything tested here.

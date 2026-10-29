@@ -151,6 +151,15 @@ OBJ = {
   # property: CAGE- suppression gives directionality, H3K4me1 suppression gives
   # promoter rather than enhancer chromatin.
   "Q_cage_rna_fwdonly_antienh": {"CAGE+":1.0, "RNA+":1.0, "CAGE-":2.0, "H3K4me1":3.0},
+  # With a floor blocking gene abandonment, the optimiser pays for every added
+  # term out of RNA instead: 98.2% down to 54.3% as terms accumulate. These
+  # upweight RNA to see whether that is a weighting choice or a real ceiling.
+  "R_rna3_antienh":         {"CAGE+":1.0, "RNA+":3.0, "H3K4me1":3.0},
+  "S_rna3_fwdonly_antienh": {"CAGE+":1.0, "RNA+":3.0, "CAGE-":2.0, "H3K4me1":3.0},
+  # Arm R misses the directionality threshold by 0.018 at CAGE 108.4%; arm S clears
+  # it at CAGE 82.0%. The reverse-strand weight is what separates them, so
+  # interpolate: 2.0 is too strong, 0.0 too weak.
+  "T_rna3_fwdonly_soft_antienh": {"CAGE+":1.0, "RNA+":3.0, "CAGE-":0.75, "H3K4me1":3.0},
 }
 # Multi-track arms normalise each track by its scale so high-amplitude marks
 # (Pol2A ~22) cannot swamp RNA (~7) through units alone.
