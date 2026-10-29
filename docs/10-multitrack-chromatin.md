@@ -512,3 +512,63 @@ character — and cannot get them together. `final` sits at RNA 131.6%,
 *overdelivering* while every loaded objective here undershoots, which suggests it
 found a sequence that satisfies everything rather than a point on a trade-off
 curve. How it did that is still the open question.
+
+## 10. Does CAGE in the objective produce DNase peaks at promoters?
+
+Raised by the authors: DNase peaks at promoters indicate active transcription
+independently of the RNA readout, which gives external confidence, and including
+CAGE in the objective is what produces those peaks. **The claim is correct, and
+this work had pushed back on it using a number computed the wrong way.**
+
+Worst-promoter DNase across every design, that is the weakest of the three
+promoters, with the unedited control at 0.07 and roughly 1.0 as the threshold for
+a real peak:
+
+| Objective class | n | worst-promoter DNase range | peak > 1.0 at all three |
+|---|---|---|---|
+| **no CAGE in the objective** | 8 | **0.04 – 0.22** | **0 / 8** |
+| **CAGE in the objective** | 20 | **0.04 – 1.09** | **1 / 20** |
+
+CAGE-containing objectives reach DNase 6.92, 6.02, 5.65 and 4.87 at individual
+promoters. CAGE-free objectives never exceed 0.22 at their weakest promoter, and
+arms F and I sit at 0.05 and 0.04, below the untouched control. Per gene-design
+pair, r(CAGE area, DNase) = **+0.418** over 60 pairs.
+
+So accessibility does follow from asking for initiation, and it does not follow
+from asking for RNA, chromatin marks, or Pol II. As an independent check that
+something is happening at the promoter, DNase is doing real work.
+
+### But it does not appear at all three promoters, including in the lab's design
+
+| lab's `final` | CAGE area | **DNase** | H3K4me3 |
+|---|---|---|---|
+| eGFP | 31.57 | **3.70** | 27.38 |
+| **mScarlet** | 14.71 | **0.37** | **1.81** |
+| TagBFP | 20.96 | **5.65** | 22.17 |
+
+**mScarlet has no DNase peak** — 0.37 against a control baseline of 0.07 and
+neighbours at 3.70 and 5.65. Its H3K4me3 is 1.81, also near background. Its CAGE
+area is 14.71, so initiation is predicted there while accessibility is not.
+
+This is the practical problem with using DNase as the confidence check: **one of
+the three promoters will fail it**, and failing it is not evidence that the
+promoter is broken. Only **1 of 28 designs** in this work clears 1.0 at all three
+promoters.
+
+### The per-gene floor is what fixes it
+
+| Objective | worst-promoter DNase |
+|---|---|
+| CAGE+RNA | 0.15 |
+| **CAGE+RNA + per-gene floor** | **1.09** (1.09 / 4.33 / 1.90) |
+| CAGE+RNA+CAGE− suppressed | 0.13 |
+| **same + per-gene floor** | **0.72** |
+| lab's `final` | 0.37 |
+
+The one design that gets a DNase peak at all three promoters is a floor arm. The
+floor stops the optimiser under-serving any single gene, and accessibility follows
+gene by gene. So the two findings combine: **CAGE is what creates accessibility,
+and a per-gene floor is what distributes it across all three promoters.**
+
+If DNase peaks are the independent confirmation the authors want, the floor is what
+makes that check pass everywhere rather than at two promoters out of three.

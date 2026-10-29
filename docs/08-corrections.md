@@ -351,6 +351,44 @@ the optimiser pays out of transcript level. The lab's `final` remains the only
 design of 27 that satisfies all five criteria simultaneously, and that is still
 unexplained.
 
+### 16. "CAGE and DNase correlate at −0.21, so accessibility is not evidence of a promoter" — retracted
+
+**Claim retracted.** This work reported that among CAGE-containing designs the
+CAGE-DNase Pearson correlation is −0.212, and used it to argue that accessibility
+is a consequence rather than evidence, and that asking for DNase peaks is the
+weakest available check.
+
+**What was wrong:** the number. It was computed over **9 designs**, using the
+**maximum across the three genes** of each track, and the **peak** CAGE readout
+that [correction 11](#11-the-labs-design-reaches-only-5560-of-its-cage-target--retracted)
+superseded. Recomputed per gene-design pair across 20 CAGE-containing designs with
+the area readout, it is **+0.418**, not −0.21. Collapsing three genes to one
+maximum destroyed most of the signal and inverted the sign.
+
+**What is actually true:**
+
+| Objective class | n | worst-promoter DNase |
+|---|---|---|
+| no CAGE in the objective | 8 | 0.04 – 0.22 |
+| CAGE in the objective | 20 | 0.04 – 1.09 |
+
+CAGE-free objectives never get their weakest promoter above 0.22, against a control
+baseline of 0.07. CAGE-containing objectives reach 6.92 at individual promoters. So
+including CAGE in the objective does produce DNase peaks at promoters, and nothing
+else tested does. The authors' reasoning was right.
+
+**What survives, in weaker form.** DNase remains unreliable *per promoter*: only 1
+of 28 designs clears 1.0 at all three, and the lab's own `final` has 0.37 at
+mScarlet while its neighbours are at 3.70 and 5.65. So accessibility is sound as an
+aggregate signal that initiation was designed in, and unsound as a per-promoter
+pass/fail test. The per-gene floor is what makes it pass at all three
+([docs/10 §10](10-multitrack-chromatin.md)).
+
+**The lesson, which is now the third instance of it:** corrections 7, 8 and 16 all
+come from collapsing per-gene data to a single aggregate before correlating. The
+three genes behave differently enough that any statistic taking a maximum or a mean
+across them should be treated as suspect.
+
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required
