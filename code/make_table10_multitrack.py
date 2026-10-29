@@ -23,6 +23,10 @@ OBJ = {
     "control": "none (backbone + final CDSs)",
     "final": "CAGE + RNA (the lab's own run)",
     "A_rna": "RNA",
+    # CpG density is a sequence property, not a predicted track. These test whether
+    # it can stand in for CAGE (correction 17: it cannot).
+    "A_rna_cpg1": "RNA + CpG constraint w=1.0 (no CAGE)",
+    "A_rna_cpg0.25": "RNA + CpG constraint w=0.25 (no CAGE)",
     "C_rna_dnase": "RNA + DNase",
     "F_rna_pol2": "RNA + Pol2S5",
     "E_rna_chrrna": "RNA + chrRNA",
@@ -109,7 +113,7 @@ def main():
             + [f"orient_index_{g}" for g in G]
             + ["orient_index_mean", "orient_index_min",
                "initiation_breadth", "genes_lost", "h3k4me3_max", "h3k4me1_max",
-               "me3_over_me1", "ep300_max", "dnase_max", "pol2a_max", "tbp_max",
+               "me3_over_me1", "ep300_max", "dnase_max", "dnase_min", "pol2a_max", "tbp_max",
                "strand_ratio"])
 
     rows = []
@@ -149,6 +153,9 @@ def main():
             "me3_over_me1": round(mx("H3K4me3") / max(mx("H3K4me1"), 1e-9), 2) if "H3K4me1|eGFP" in r else "",
             "ep300_max": round(mx("EP300"), 2) if "EP300|eGFP" in r else "",
             "dnase_max": round(mx("DNase"), 2),
+            # The worst promoter is the honest statistic: the goal is a peak at all
+            # three, and a maximum across genes passes a design that opens one.
+            "dnase_min": round(min(r[f"DNase|{g}"] for g in G), 2),
             "pol2a_max": round(mx("Pol2A"), 2) if "Pol2A|eGFP" in r else "",
             "tbp_max": round(mx("TBP"), 2),
             "strand_ratio": round(rp / max(rm, 1e-9), 1),
