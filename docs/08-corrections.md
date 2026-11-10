@@ -442,6 +442,124 @@ test, but it suggests *position relative to the TSS* matters more than density.
 tested within the hour rather than being left to stand as a plausible suggestion.
 Correction 15 took fifteen experiments to find; this took one.
 
+### 18. "The CAGE arms are unidirectional, so they are promoters not enhancers" — retracted, the window was blind by construction
+
+[docs/10 §7](10-multitrack-chromatin.md) introduced an orientation index from
+Borzoi's forward and reverse CAGE tracks and reported a clean separation: 8
+CAGE-free objectives at 0.578–0.760, 9 CAGE-containing at 0.838–0.993, the lab's
+`final` at 0.993, no overlap. That was used to soften correction 9, concluding the
+CAGE arms were "promoter-like in initiation direction, enhancer-like in
+chromatin."
+
+**The orientation index was computed over 5 bins (160 bp) starting at the TSS bin
+and running downstream. Divergent initiation peaks 25–250 bp UPSTREAM. The window
+structurally cannot see the thing the metric claims to measure.**
+
+Measured properly with ProCapNet at single-base resolution, summing antisense over
+−250 to −25 bp ([docs/12](12-procap-crossmodel.md)):
+
+| | Borzoi orientation index | antisense / sense by PRO-cap | real promoter range |
+|---|---|---|---|
+| lab's `final`, TagBFP | **0.991** | **2.17** | 0.021 – 0.160 |
+| lab's `final`, mScarlet | 0.993 | 1.74 | |
+| lab's `final`, eGFP | 0.994 | 3.66 | |
+| arm J, eGFP | 0.871 | 1.83 | |
+
+The lab's `final` scored 0.99 on a metric meant to certify unidirectional
+initiation while actually producing **more antisense initiation than sense** at all
+three promoters. Of 24 promoter-design pairs, one passes a real-promoter
+divergence test.
+
+**So correction 9 should not have been softened.** Its original harsher form was
+closer to right: these designs are enhancer-like, and that now holds on chromatin
+(H3K4me1 > H3K4me3), on the authors' own NTv3 segmentation (slide 54), and on
+independent base-resolution initiation. Three lines, two of them outside this work.
+
+**The lesson, and it is a new one.** Corrections 7, 8 and 16 came from aggregating
+across genes. Correction 11 came from comparing a peak to an area. This one is a
+third species: **a metric evaluated over a window that excludes the phenomenon.**
+The orientation index was not mismeasured, it was measured somewhere the signal
+could not be. Any directionality claim has to state its window and justify why the
+antisense signal would fall inside it.
+
+### 19. "The two initiation oracles fundamentally disagree about what a promoter is" — retracted, it was a cross-model artifact
+
+[docs/12 §6](12-procap-crossmodel.md) was built on this: optimising Borzoi's CAGE
+gave ~100% of the CAGE target and ~5 PRO-cap reads, while optimising ProCapNet gave
+85 reads and 14% of the CAGE target. I concluded that CAGE and PRO-cap capture
+different sequence features, and that this was a deep fact about the two assays.
+
+**Hold the model fixed and the two assays agree almost perfectly.** AlphaGenome
+predicts both from one sequence ([docs/13 §3](13-alphagenome-arbitration.md)), over
+21 design-gene pairs spanning the CDS-only control to real housekeeping promoters:
+
+| | Pearson | Spearman |
+|---|---|---|
+| **AlphaGenome CAGE vs AlphaGenome PRO-cap** | **+0.953** | **+0.918** |
+| Borzoi CAGE vs AlphaGenome CAGE (*same assay*, two models) | +0.751 | **+0.516** |
+| Borzoi DNase vs AlphaGenome DNase (*never optimised*) | +0.872 | **+0.899** |
+
+The same assay across two models agrees *worse* than two different assays within one
+model. So the docs/12 §6 finding was **Borzoi versus ProCapNet**, not CAGE versus
+PRO-cap. The claim that the lab's external-filtering step is load-bearing survives —
+it is arguably strengthened — but the stated reason was wrong.
+
+**A fourth species of error:** attributing a disagreement to the variable I was
+interested in (the assay) when it belonged to a variable I had not controlled (the
+model). The fix was free and available the whole time: use a model that emits both.
+
+### 20. "RNA + PRO-cap gives properly unidirectional promoters at all three genes" — retracted, that was overfitting to the oracle in the loop
+
+The headline of [docs/12 §5](12-procap-crossmodel.md): a two-model design loop
+produced 3 of 3 promoters inside the real-promoter divergence range, the only design
+in the project to do so. **ProCapNet was the model being optimised.** Judged by
+AlphaGenome, which was in no design loop:
+
+| design / promoter | ProCapNet | AlphaGenome | |
+|---|---|---|---|
+| eGFP | 0.049 ✓ | 0.072 ✓ | holds |
+| mScarlet | 0.070 ✓ | **0.430 ✗** | fails |
+| TagBFP | 0.051 ✓ | **2.170 ✗** | fails |
+
+**3 of 3 becomes 1 of 3**, and mScarlet's magnitude falls from 84.8 reads to 7.4.
+
+The same correction runs the other way for the lab's design. docs/12 §3 reported
+`final` as divergent at all three promoters and I sent that to the lab as a headline.
+AlphaGenome scores mScarlet at 0.108 and TagBFP at 0.236, both passing: **0 of 3
+becomes 2 of 3.** Only the eGFP promoter is divergent under both models. That claim
+should not have been sent as settled.
+
+### 21. "RNA at 85–135% of target means the 7/5/3 ladder is achieved" — not supported by an independent model
+
+Every table in this repo reports RNA as a percentage of the 7 / 5 / 3 target computed
+from Borzoi, the model that had RNA in its loss. Checked against AlphaGenome
+([docs/13 §7](13-alphagenome-arbitration.md)):
+
+| | ladder in the right order? |
+|---|---|
+| **Borzoi** (RNA was in the loss) | **7 of 7 designs** |
+| **AlphaGenome** (independent) | **2 of 7 designs** |
+
+For the lab's `final`, Borzoi gives 7.76 / 7.09 / 4.89 and AlphaGenome gives
+0.050 / 0.270 / 1.820 — **inverted**, with TagBFP at 37× eGFP where the target is
+0.43×. `final`'s AlphaGenome profile also stays high past the last gene
+(post-TagBFP 0.631 against TagBFP 1.820), a read-through pattern rather than three
+independent genes; the premature `AATAAA` 34 bp after the mScarlet stop is a
+candidate cause, and Borzoi is blind to it.
+
+Only order and ratio are comparable, not magnitude, and nothing here says which model
+is right. But the deliverable of the whole project is an expression ratio, and it has
+only ever been verified by the model that was optimised to produce it.
+
+**This generalises corrections 19 and 20 into one rule.** Cross-model agreement in
+this project falls monotonically with how hard the objective pushed on the readout:
+DNase, never optimised, +0.899; PRO-cap, optimised in one arm, +0.648; CAGE,
+optimised in most arms, +0.516; the RNA ladder, optimised in every arm, reproduces in
+2 of 7. **A readout that was in the loss is a diagnostic, not evidence.** The two
+findings in this repo that survived independent checking — DNase peaks tracking
+promoter quality, and chromatin marks being consequences rather than causes — are
+precisely the two measured on readouts no objective touched.
+
 ## The lesson
 
 Every substantive error above has one cause: padding a 19,968 bp design into Borzoi's required

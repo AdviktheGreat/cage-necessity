@@ -481,9 +481,349 @@ def score_loci(designs="final,B_cage_rna,control"):
     json.dump(rows, open("/data/out/scores_loci.json","w")); data.commit()
     return {"n":len(rows),"loci":len({r["locus"] for r in rows})}
 
+# ------------------------------------------------------- ProCapNet (PRO-cap)
+# Borzoi has zero PRO-cap tracks, so answering "does a CAGE+RNA design give
+# reasonable PRO-cap signal" needs a second, independent model. ProCapNet is a
+# BPNet trained on ENCODE K562 PRO-cap (ENCSR261KBX), predicting both strands at
+# single-base resolution over a 1,000 bp output from a 2,114 bp input. At that
+# size every promoter window sits entirely inside the 19,968 bp design, so the
+# flank-padding problem that dominates the Borzoi results does not arise at all.
+PC_IN, PC_OUT = 2114, 998
+PC_URL = "https://www.encodeproject.org/files/ENCFF976FHE/@@download/ENCFF976FHE.tar.gz"
+PC_ACCESSION = "ENCSR261KBX"
+# Member path inside the ENCODE tarball, not a credential.
+PC_WEIGHTS_PATH = f"./fold_0/{PC_ACCESSION}.procapnet_model.fold0.state_dict.torch"
+# Real plus-strand promoters of genes expressed in K562, hg38 TSS coordinates.
+# Needed because "reasonable PRO-cap signal" is meaningless without knowing what
+# a genuine promoter scores on this model.
+REAL_PROM = {"GAPDH": ("chr12", 6534517), "RPL13A": ("chr19", 49487608),
+             "PGK1": ("chrX", 78104248)}
+
+# bpnet-lite pulls in MACS3, which compiles C extensions against zlib/bz2/lzma.
+pcimage = (modal.Image.debian_slim(python_version="3.11")
+    .apt_install("zlib1g-dev", "libbz2-dev", "liblzma-dev", "gcc", "g++")
+    .pip_install("numpy", "torch", "transformers", "huggingface_hub",
+                 "borzoi-pytorch==0.5.1", "ledidi==2.2.0", "bpnet-lite==1.1.0")
+    .env({"HF_HOME": "/cache/hf"}))
+
+
+def pc_load():
+    """ProCapNet fold 0, from the ENCODE tarball cached on the volume."""
+    import torch, tarfile
+    from io import BytesIO
+    try:
+        from bpnetlite import BPNet
+    except ImportError:
+        from bpnetlite.bpnet import BPNet
+    with tarfile.open("/data/ctx/procapnet.tar.gz") as tar:
+        blob = tar.extractfile(PC_WEIGHTS_PATH).read()
+    sd = torch.load(BytesIO(blob), map_location="cpu", weights_only=False)
+    m = BPNet(n_filters=512, n_control_tracks=0)
+    m.load_state_dict(sd)
+    return m.cuda().eval()
+
+
+def pc_window(dsn, atg):
+    """2,114 bp of the design, centred so the 1,000 bp output centres on the TSS.
+
+    The designed TSS is 128 bp upstream of the ATG; the model trims
+    (2114-1000)/2 = 557 bp from each end, so the input starts 1,057 bp before it.
+    """
+    tss = atg - 128
+    s = tss - (PC_IN - PC_OUT) // 2 - PC_OUT // 2
+    return dsn[s:s + PC_IN], tss
+
+
+@app.function(image=pcimage, gpu="A100-40GB", volumes={"/data": data, "/cache": hfc},
+              timeout=3600)
+def procap_probe():
+    """Download the weights, load the model, and report real output shapes."""
+    import torch, numpy as np, urllib.request, os, tarfile
+    p = "/data/ctx/procapnet.tar.gz"
+    if not os.path.exists(p):
+        urllib.request.urlretrieve(PC_URL, p)
+        data.commit()
+    with tarfile.open(p) as tar:
+        members = [m.name for m in tar.getmembers()][:14]
+    m = pc_load()
+    X = torch.from_numpy(ohe_np("ACGT" * (PC_IN // 4)))[None].cuda()
+    with torch.no_grad():
+        out = m(X)
+    shapes = [tuple(o.shape) for o in out] if isinstance(out, (tuple, list)) else [tuple(out.shape)]
+    n_par = sum(q.numel() for q in m.parameters())
+    return {"tar_members": members, "n_outputs": len(shapes), "shapes": shapes,
+            "params_M": round(n_par / 1e6, 1),
+            "sample": [float(o.flatten()[0]) for o in (out if isinstance(out, (tuple, list)) else [out])]}
+
+
+@app.function(image=pcimage, gpu="A100-40GB", volumes={"/data": data, "/cache": hfc},
+              timeout=5400)
+def procap_score():
+    """PRO-cap predictions for every design, against real promoters as a yardstick.
+
+    ProCapNet emits a multinomial profile over both strands jointly plus one
+    scalar log total count, so per-strand strength is the total split by the
+    profile mass on each strand.
+    """
+    import torch, numpy as np, glob, urllib.request, os
+    m = pc_load()
+
+    def run(seq):
+        if len(seq) != PC_IN or set(seq) - set("ACGT"):
+            return None
+        X = torch.from_numpy(ohe_np(seq))[None].cuda()
+        with torch.no_grad():
+            prof, cnt = m(X)
+        logtot = float(cnt[0, 0])
+        lp = torch.log_softmax(prof[0].flatten(), dim=0).reshape(2, -1)
+        p = lp.exp()
+        fwd, rev = float(p[0].sum()), float(p[1].sum())
+        tot = float(np.exp(logtot))
+        # The TSS sits at the centre of the output window by construction.
+        c = p.shape[1] // 2
+        near = slice(max(c - 50, 0), c + 50)
+        pf = p[0].cpu().numpy()
+        return {"logcount": round(logtot, 3), "count": round(tot, 1),
+                "count_fwd": round(tot * fwd, 1), "count_rev": round(tot * rev, 1),
+                "orient": round(max(fwd, rev) / max(fwd + rev, 1e-9), 3),
+                "frac_fwd": round(fwd, 3),
+                "argmax_offset": int(pf.argmax() - c),
+                "mass_within_50bp": round(float(p[0][near].sum() + p[1][near].sum()), 4)}
+
+    rows = []
+    # Real promoters first: without them "reasonable" has no referent.
+    for nm, (ch, tss) in REAL_PROM.items():
+        s0 = tss - 1057
+        url = (f"https://api.genome.ucsc.edu/getData/sequence?genome=hg38"
+               f";chrom={ch};start={s0};end={s0 + PC_IN}")
+        seq = None
+        for _ in range(4):
+            try:
+                with urllib.request.urlopen(url, timeout=180) as r:
+                    seq = json.loads(r.read().decode())["dna"].upper()
+                break
+            except Exception as e:
+                print("retry", nm, e); time.sleep(5)
+        if seq is None: continue
+        gc = 100.0 * (seq.count("G") + seq.count("C")) / len(seq)
+        o = run(seq)
+        if o: rows.append({"design": f"REAL:{nm}", "gene": "-", "gc": round(gc, 1), **o})
+        print(nm, o)
+
+    base = json.load(open("/data/ctx/designs.json"))
+    cand = {k: base[k] for k in ("initial", "control", "final")}
+    for fp in sorted(glob.glob("/data/out/design_*.json")):
+        d = json.load(open(fp)); cand[d["arm"]] = d["design"]
+    for nm, dsn in cand.items():
+        for g, (a, _) in GENES.items():
+            seq, tss = pc_window(dsn, a)
+            o = run(seq)
+            if o:
+                gc = 100.0 * (seq.count("G") + seq.count("C")) / len(seq)
+                rows.append({"design": nm, "gene": g, "gc": round(gc, 1), **o})
+    json.dump(rows, open("/data/out/procap_scores.json", "w")); data.commit()
+    return {"n": len(rows), "designs": len({r["design"] for r in rows})}
+
+
+@app.function(image=pcimage, gpu="A100-40GB", volumes={"/data": data, "/cache": hfc},
+              timeout=5400)
+def procap_profiles():
+    """Full base-resolution PRO-cap profiles, plus negative controls.
+
+    The argmax alone is misleading: several designs share an identical peak
+    offset, which can only come from sequence that is frozen in all of them (the
+    CDSs). This records the whole profile so initiation at the designed TSS can
+    be separated from initiation elsewhere in the window, and adds random
+    genomic windows as a negative reference.
+    """
+    import torch, numpy as np, glob, urllib.request, os
+    m = pc_load()
+
+    def run(seq):
+        X = torch.from_numpy(ohe_np(seq))[None].cuda()
+        with torch.no_grad():
+            prof, cnt = m(X)
+        logtot = float(cnt[0, 0])
+        p = torch.log_softmax(prof[0].flatten(), dim=0).reshape(2, -1).exp().cpu().numpy()
+        tot = float(np.exp(logtot))
+        return tot, p
+
+    out = {"real": {}, "neg": {}, "designs": {}, "meta": {"PC_IN": PC_IN, "PC_OUT": PC_OUT}}
+
+    for nm, (ch, tss) in REAL_PROM.items():
+        s0 = tss - 1057
+        url = (f"https://api.genome.ucsc.edu/getData/sequence?genome=hg38"
+               f";chrom={ch};start={s0};end={s0 + PC_IN}")
+        for _ in range(4):
+            try:
+                with urllib.request.urlopen(url, timeout=180) as r:
+                    seq = json.loads(r.read().decode())["dna"].upper()
+                break
+            except Exception as e:
+                print("retry", nm, e); time.sleep(5)
+        tot, p = run(seq)
+        out["real"][nm] = {"count": tot, "fwd": p[0].tolist(), "rev": p[1].tolist()}
+
+    # Random genomic windows: real DNA, almost never a promoter.
+    for fp in sorted(glob.glob("/data/ctx/loci/*.txt"))[:4]:
+        nm = os.path.basename(fp)[:-4]
+        s = open(fp).read().strip()
+        for k, off in enumerate((200000, 300000)):
+            w = s[off:off + PC_IN]
+            if len(w) == PC_IN and not set(w) - set("ACGT"):
+                tot, p = run(w)
+                out["neg"][f"{nm}_{k}"] = {"count": tot, "fwd": p[0].tolist(), "rev": p[1].tolist()}
+
+    base = json.load(open("/data/ctx/designs.json"))
+    cand = {k: base[k] for k in ("control", "final")}
+    for fp in sorted(glob.glob("/data/out/design_*.json")):
+        d = json.load(open(fp))
+        if d["arm"] in ("A_rna", "B_cage_rna", "J_cage_rna_chrrna", "B_cage_rna_floor",
+                        "R_rna3_antienh_floor", "A_rna_cpg1", "PC_rna_procap"):
+            cand[d["arm"]] = d["design"]
+    for nm, dsn in cand.items():
+        out["designs"][nm] = {}
+        for g, (a, z) in GENES.items():
+            seq, tss = pc_window(dsn, a)
+            tot, p = run(seq)
+            out["designs"][nm][g] = {"count": tot, "fwd": p[0].tolist(), "rev": p[1].tolist(),
+                                     # Where the CDS starts, in output-window coordinates.
+                                     "cds_start_off": a - tss, "cds_end_off": z - tss}
+    json.dump(out, open("/data/out/procap_profiles.json", "w")); data.commit()
+    return {"real": len(out["real"]), "neg": len(out["neg"]), "designs": len(out["designs"])}
+
+
+# Sense/antisense windows in ProCapNet output coordinates. The TSS sits at the
+# centre by construction; divergent initiation in real data peaks 50-200 bp
+# upstream on the opposite strand, which is why a window measured only at the TSS
+# cannot detect it (correction 18).
+PC_C = PC_OUT // 2
+PC_SENSE = (PC_C - 25, PC_C + 26)
+PC_ANTI = (PC_C - 250, PC_C - 25)
+# Real promoters put 47-91% of all predicted initiation in the central 51 bp and
+# hold antisense to 2-16% of sense. These are the targets.
+PC_TGT_SENSE, PC_TGT_ANTI = 0.5, 0.05
+PC_TGT_LOGCOUNT = {"eGFP": 5.0, "mScarlet": 4.65, "RFP3": 4.14}
+
+
+@app.function(image=pcimage, gpu="A100-80GB", volumes={"/data": data, "/cache": hfc},
+              timeout=7200)
+def design_procap(arm="PC_rna_procap", flank="aavs1", init="control", max_iter=600,
+                  l=1e-3, lr=0.5, batch_size=1, rep=0, seed=0,
+                  w_sense=0.5, w_anti=0.5, w_cnt=0.1):
+    """Design against Borzoi RNA + ProCapNet PRO-cap, with no CAGE anywhere.
+
+    This is the authors' second question: if the objective specifies transcript
+    abundance and initiation measured as PRO-cap, do CAGE and the promoter DNase
+    peaks follow for free? Two models share one autograd graph; Borzoi sees the
+    whole 524 kb input and ProCapNet sees three 2,114 bp promoter windows cut
+    out of it.
+    """
+    import torch, numpy as np, math
+    from ledidi import Ledidi
+
+    bz = load(rep)
+    for p in bz.parameters(): p.requires_grad_(False)
+    pc = pc_load()
+    for p in pc.parameters(): p.requires_grad_(False)
+
+    rna_row = TR["RNA+"]
+    spans = [(DESIGN_START + a - 128 - 1057, DESIGN_START + a - 128 - 1057 + PC_IN)
+             for a, _ in GENES.values()]
+    lct = [PC_TGT_LOGCOUNT[g] for g in GENES]
+
+    class Head(torch.nn.Module):
+        def __init__(self): super().__init__(); self.pc_terms = None
+        def forward(self, X):
+            terms = []
+            for s, e in spans:
+                prof, cnt = pc(X[:, :, s:e])
+                flat = torch.log_softmax(prof.reshape(prof.shape[0], -1), dim=-1)
+                terms.append((cnt[:, 0], flat.reshape(prof.shape)))
+            self.pc_terms = terms
+            with torch.autocast("cuda", dtype=torch.bfloat16):
+                y = bz(X)
+            return y[:, [rna_row], BIN0:BIN0 + NB].float()
+
+    head = Head().cuda().eval()
+
+    class RNAPlusProCap(torch.nn.Module):
+        """RNA MSE plus one-sided PRO-cap shape and magnitude penalties."""
+
+        def __init__(self, h):
+            super().__init__()
+            self._h = [h]
+            self.ls, self.la = math.log(PC_TGT_SENSE), math.log(PC_TGT_ANTI)
+
+        def forward(self, y_pred, y_true):
+            mse = ((y_pred - y_true) ** 2).mean()
+            pen = y_pred.new_zeros(())
+            for i, (lc, lp) in enumerate(self._h[0].pc_terms):
+                b = lp.shape[0]
+                sense = torch.logsumexp(lp[:, 0, PC_SENSE[0]:PC_SENSE[1]].reshape(b, -1), -1)
+                anti = torch.logsumexp(lp[:, 1, PC_ANTI[0]:PC_ANTI[1]].reshape(b, -1), -1)
+                pen = pen + w_sense * torch.relu(self.ls - sense).pow(2).mean()
+                pen = pen + w_anti * torch.relu(anti - self.la).pow(2).mean()
+                pen = pen + w_cnt * torch.relu(lct[i] - lc).pow(2).mean()
+            return mse + pen / len(spans)
+
+    init_design = json.load(open("/data/ctx/designs.json"))[init]
+    X = torch.from_numpy(ohe_np(build(init_design, flank)))[None].cuda()
+    mask = np.ones(524288, dtype=bool)
+    cds = set()
+    for a, z in GENES.values(): cds.update(range(a, z))
+    for p in range(DLEN):
+        if p not in cds: mask[DESIGN_START + p] = False
+    n_mut = int((~mask).sum())
+
+    y_bar = torch.from_numpy(target_profiles(["RNA+"]))[None].cuda()
+    loss_fn = RNAPlusProCap(head).cuda()
+
+    torch.manual_seed(seed)
+    led = Ledidi(head, shape=(4, 524288), output_loss=loss_fn,
+                 input_mask=torch.from_numpy(mask).cuda(), l=l, lr=lr,
+                 batch_size=batch_size, max_iter=max_iter,
+                 early_stopping_iter=max_iter, report_iter=50, verbose=True,
+                 random_state=seed).cuda()
+    t0 = time.time()
+    out = led.fit_transform(X, y_bar).detach()
+    dt = time.time() - t0
+
+    with torch.no_grad():
+        yy = head(out.cuda())
+        err = ((yy - y_bar) ** 2).mean(dim=(1, 2))
+        best = int(err.argmin())
+    idx = out[best].cpu().numpy().argmax(axis=0)
+    seq = np.frombuffer(b"ACGT", dtype=np.uint8)[idx].tobytes().decode()
+    dsn = seq[DESIGN_START:DESIGN_START + DLEN]
+    n_edits = sum(1 for i in range(DLEN) if dsn[i] != init_design[i])
+
+    label = arm
+    if max_iter != 600: label += f"_i{max_iter}"
+    res = {"arm": label, "flank": flank, "init": init, "seconds": round(dt, 1),
+           "n_mutable": n_mut, "n_edits": n_edits, "max_iter": max_iter, "l": l, "lr": lr,
+           "w_sense": w_sense, "w_anti": w_anti, "w_cnt": w_cnt,
+           "tracks": ["RNA+", "PROcap_sense", "PROcap_antisense", "PROcap_count"],
+           "final_output_mse": float(err[best])}
+    with open(f"/data/out/design_{label}.json", "w") as f:
+        json.dump({**res, "design": dsn}, f)
+    data.commit()
+    return res
+
+
 @app.local_entrypoint()
 def main(step: str="arms", flank: str="aavs1", rep: int=0, arm: str="B_cage_rna",
          max_iter: int=600, l: float=1e-3, lr: float=0.5):
+    if step=="procapdesign":
+        for a in arm.split(","):
+            print(json.dumps(design_procap.remote(arm=a, flank=flank, max_iter=max_iter, l=l, lr=lr, rep=rep)))
+        return
+    if step=="procapprof":
+        print(json.dumps(procap_profiles.remote(), indent=1)); return
+    if step=="procapscore":
+        print(json.dumps(procap_score.remote(), indent=1)); return
+    if step=="procapprobe":
+        print(json.dumps(procap_probe.remote(), indent=1)); return
     if step=="arms":
         for fl in flank.split(","):
             print(json.dumps(arms.remote(fl)))

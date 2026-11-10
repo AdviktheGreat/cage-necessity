@@ -27,6 +27,8 @@ OBJ = {
     # it can stand in for CAGE (correction 17: it cannot).
     "A_rna_cpg1": "RNA + CpG constraint w=1.0 (no CAGE)",
     "A_rna_cpg0.25": "RNA + CpG constraint w=0.25 (no CAGE)",
+    # Designed against a second model: Borzoi RNA + ProCapNet PRO-cap, no CAGE.
+    "PC_rna_procap": "RNA + PRO-cap sense/antisense/count (no CAGE, 2 models)",
     "C_rna_dnase": "RNA + DNase",
     "F_rna_pol2": "RNA + Pol2S5",
     "E_rna_chrrna": "RNA + chrRNA",
