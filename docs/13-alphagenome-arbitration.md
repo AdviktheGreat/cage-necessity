@@ -246,6 +246,20 @@ All three models rank the promoters within each design the same way, including t
 one-good-two-dead pattern. Accessibility is now the single most robust readout in this project,
 across three unrelated models, and it remains the one no objective ever optimised.
 
+**A data-file bug caught after pushing, recorded here rather than quietly fixed.** The first
+version of the AG2 scoring helper selected a track by taking the *first* match on the requested
+strand. K562 carries two CAGE tracks per strand in AG2 — `hCAGE` and a low-quality `LQhCAGE` — so
+that silently returned `LQhCAGE`, up to 2.5x off (the lab's `final` at eGFP read 21.4 instead of
+53.8). The CAGE columns of `data/predictions/alphagenome2_summary.json` were wrong in commit
+`9919eb5` and are corrected here; the selector now matches on assay name and raises if the
+intended track is absent, rather than falling back.
+
+Nothing above changes. `table14_alphagenome2.csv` was computed separately with explicit column
+indices and was always right, and the RNA, DNase, scATAC and methylation values were unaffected
+because those modalities have one track per condition. But it is the same species of error as
+[corrections 7, 8 and 16](08-corrections.md): a selection step that silently picked the wrong
+thing, where a fallback hid the problem instead of failing loudly.
+
 ### New: the designed CpG islands are not predicted to be methylated
 
 [docs/11](11-what-cage-is-doing.md) found that CAGE optimisation works by installing CpG islands.

@@ -202,16 +202,27 @@ def score2(designs="control,final,B_cage_rna,B_cage_rna_floor,A_rna_cpg1,R_rna3_
                                 for i, r in md.iterrows()][:8]
         return d
 
+    # K562 carries several tracks per assay; pick the intended one by name, not the
+    # first strand match. CAGE has both hCAGE and a low-quality LQhCAGE track, and
+    # taking the first "+" match silently selected LQhCAGE.
+    PREFER = {"cage": "hCAGE", "rna_seq": "polyA plus RNA-seq-encode-paired-end"}
+
     def pick(d, n, strand):
-        """Select a track by strand from metadata rather than assuming column order."""
         if n not in d:
             return None
         a, md = d[n]
+        cols = list(range(a.shape[1]))
         if "strand" in md.columns:
-            idx = [int(i) for i, r in md.iterrows() if str(r["strand"]) == strand]
-            if idx:
-                return a[:, md.index.get_loc(idx[0]) if False else idx[0]]
-        return a[:, 0]
+            cols = [k for k, (_, r) in enumerate(md.iterrows()) if str(r["strand"]) == strand] or cols
+        want = PREFER.get(n)
+        if want:
+            named = [k for k in cols
+                     if want in str(md.iloc[k].get("name", "")) and
+                     not str(md.iloc[k].get("name", "")).startswith("EFO:0002067_LQ")]
+            if named:
+                return a[:, named[0]]
+            raise ValueError(f"no {n} track matching {want!r} on strand {strand}")
+        return a[:, cols[0]]
 
     for name in designs.split(","):
         dsn = base[name] if name in base else J.load(open(f"/data/out/design_{name}.json"))["design"]
