@@ -134,3 +134,129 @@ def score(designs="control,final,B_cage_rna,B_cage_rna_floor,PC_rna_procap,A_rna
     vol.commit()
     print(f"\nwrote {len(keep)} arrays, {len(rows)} summary rows")
     return rows
+
+
+# ---- AlphaGenome 2 ----
+# AG2 is conditional: every prediction needs a reference condition. It also drops
+# PRO-cap, so the divergence work in docs/12-13 has to stay on AG1.
+ag2image = (modal.Image.debian_slim(python_version="3.11")
+            .pip_install("numpy", "pandas")
+            .run_commands("pip install --upgrade 'alphagenome'"))
+
+
+@app.function(image=ag2image, volumes={"/data": vol}, secrets=[SEC], timeout=1800)
+def probe2():
+    import alphagenome
+    print("alphagenome version:", getattr(alphagenome, "__version__", "?"))
+    from alphagenome.models.v2 import dna_client as v2
+    client = v2.create(os.environ["ALPHAGENOME_API_KEY"])
+    print("v2 client ok")
+    print("output types:", sorted(t.name for t in v2.OutputType))
+    print("has PROCAP:", any(t.name == "PROCAP" for t in v2.OutputType))
+    print("sequence lengths:", sorted(int(x) for x in v2.SUPPORTED_SEQUENCE_LENGTHS.values()))
+    sc = client.supported_conditions()
+    print("conditions:", len(sc), "columns:", list(sc.columns)[:10])
+    hit = sc[sc.astype(str).apply(lambda r: r.str.contains("K562", case=False, na=False).any(), axis=1)]
+    print(f"K562-matching conditions: {len(hit)}")
+    for i, r in hit.head(12).iterrows():
+        print("  ", {k: str(r[k])[:46] for k in list(sc.columns)[:5]})
+    return {"n_conditions": len(sc), "k562": len(hit)}
+
+
+AG2_OUTS = ("rna_seq", "cage", "dnase", "atac", "sc_atac", "methylation")
+
+
+@app.function(image=ag2image, volumes={"/data": vol}, secrets=[SEC], timeout=3600)
+def score2(designs="control,final,B_cage_rna,B_cage_rna_floor,A_rna_cpg1,R_rna3_antienh_floor,PC_rna_procap"):
+    import numpy as np, json as J
+    from alphagenome.models.v2 import dna_client as v2
+    from alphagenome.data import genome
+    client = v2.create(os.environ["ALPHAGENOME_API_KEY"])
+    req, names = [], []
+    for o in AG2_OUTS:
+        t = getattr(v2.OutputType, o.upper(), None)
+        if t is not None:
+            req.append(t); names.append(o)
+    print("requesting:", names, flush=True)
+
+    base = J.load(open("/data/ctx/designs.json"))
+    flank = open("/data/ctx/aavs1_flank.txt").read().strip()
+    Lf, Rf = flank[:DESIGN_START], flank[DESIGN_START + DLEN:]
+    lo, hi = DESIGN_START - 1000, DESIGN_START + DLEN + 1000
+    keep, rows, meta_once = {}, [], {}
+
+    def grab(out, seq=None, interval=None):
+        kw = dict(requested_outputs=req, condition=K562)
+        o = (client.predict_sequence(sequence=seq, **kw) if seq is not None
+             else client.predict_interval(interval=interval, **kw))
+        d = {}
+        for n in names:
+            td = getattr(o, n, None)
+            if td is None:
+                continue
+            d[n] = (np.asarray(td.values, dtype=np.float32), td.metadata)
+            if n not in meta_once:
+                md = td.metadata
+                meta_once[n] = [{"i": int(i), "name": str(r.get("name", ""))[:48],
+                                 "strand": str(r.get("strand", "."))}
+                                for i, r in md.iterrows()][:8]
+        return d
+
+    def pick(d, n, strand):
+        """Select a track by strand from metadata rather than assuming column order."""
+        if n not in d:
+            return None
+        a, md = d[n]
+        if "strand" in md.columns:
+            idx = [int(i) for i, r in md.iterrows() if str(r["strand"]) == strand]
+            if idx:
+                return a[:, md.index.get_loc(idx[0]) if False else idx[0]]
+        return a[:, 0]
+
+    for name in designs.split(","):
+        dsn = base[name] if name in base else J.load(open(f"/data/out/design_{name}.json"))["design"]
+        assert len(dsn) == DLEN
+        d = grab(None, seq=Lf + dsn + Rf)
+        for n in names:
+            if n in d:
+                keep[f"{name}|{n}"] = d[n][0][lo:hi]
+        for gene, (atg, _) in GENES.items():
+            tss = DESIGN_START + atg - 128
+            row = {"design": name, "gene": gene}
+            for n in ("cage",):
+                v = pick(d, n, "+")
+                if v is not None:
+                    row[f"{n}_sense"] = float(v[tss - 25:tss + 26].sum())
+                    row[f"{n}_area160"] = float(v[tss:tss + 160].sum())
+            for n in ("dnase", "atac", "sc_atac", "methylation"):
+                if n in d:
+                    w = d[n][0][tss - 300:tss + 300]
+                    row[f"{n}_max"] = float(w.max()); row[f"{n}_mean"] = float(w.mean())
+            v = pick(d, "rna_seq", "+")
+            if v is not None:
+                row["rna_cds_mean"] = float(v[DESIGN_START + atg:DESIGN_START + GENES[gene][1]].mean())
+            rows.append(row)
+        print(f"{name:24s} done  " + " ".join(f"{n}{d[n][0].shape[1]}" for n in names if n in d), flush=True)
+
+    for gene, (chrom, tss_g) in REAL_PROM.items():
+        iv = genome.Interval(chrom, tss_g - AG_LEN // 2, tss_g + AG_LEN // 2)
+        d = grab(None, interval=iv)
+        c = AG_LEN // 2
+        for n in names:
+            if n in d:
+                keep[f"REAL_{gene}|{n}"] = d[n][0][c - 1000:c + 1000]
+        row = {"design": "REAL", "gene": gene}
+        v = pick(d, "cage", "+")
+        if v is not None:
+            row["cage_sense"] = float(v[c - 25:c + 26].sum())
+        for n in ("dnase", "atac", "sc_atac", "methylation"):
+            if n in d:
+                row[f"{n}_max"] = float(d[n][0][c - 300:c + 300].max())
+        rows.append(row)
+        print(f"REAL {gene:18s} done", flush=True)
+
+    np.savez_compressed("/data/out/ag2_tracks.npz", **keep)
+    J.dump({"rows": rows, "track_meta": meta_once}, open("/data/out/ag2_summary.json", "w"), indent=1)
+    vol.commit()
+    print(f"\nwrote {len(keep)} arrays, {len(rows)} rows")
+    print("track metadata:", J.dumps(meta_once)[:1200])

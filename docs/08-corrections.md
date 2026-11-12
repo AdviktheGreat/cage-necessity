@@ -538,7 +538,15 @@ from Borzoi, the model that had RNA in its loss. Checked against AlphaGenome
 | | ladder in the right order? |
 |---|---|
 | **Borzoi** (RNA was in the loss) | **7 of 7 designs** |
-| **AlphaGenome** (independent) | **2 of 7 designs** |
+| **AlphaGenome 1** (independent) | **3 of 7 designs** |
+| **AlphaGenome 2** (independent, released 2026-11-11) | **3 of 7 designs** |
+
+**AlphaGenome 1 and 2 return identical verdicts on all seven designs** and disagree with
+Borzoi on four of them ([docs/13 §10](13-alphagenome-arbitration.md)). They differ on
+severity: for `final` AG1 reads 0.081 / 0.340 / 1.849, a 23x spread badly inverted, while
+AG2 reads 0.854 / 1.062 / 1.709, a 2x spread mildly inverted against a 2.33x target. So the
+dynamic range is about right and the order is wrong. AG1 and AG2 share a lineage, so this is
+two checks rather than two fully independent ones.
 
 For the lab's `final`, Borzoi gives 7.76 / 7.09 / 4.89 and AlphaGenome gives
 0.050 / 0.270 / 1.820 — **inverted**, with TagBFP at 37× eGFP where the target is

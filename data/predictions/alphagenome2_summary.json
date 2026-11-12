@@ -1,0 +1,475 @@
+{
+ "rows": [
+  {
+   "design": "control",
+   "gene": "eGFP",
+   "cage_sense": 0.01586001366376877,
+   "cage_area160": 0.3699173331260681,
+   "dnase_max": 0.15392319858074188,
+   "dnase_mean": 0.026998190209269524,
+   "atac_max": 0.4342533349990845,
+   "atac_mean": 0.02839309722185135,
+   "sc_atac_max": 0.5905737280845642,
+   "sc_atac_mean": 0.03133896738290787,
+   "methylation_max": 0.225217804312706,
+   "methylation_mean": 0.011949528940021992,
+   "rna_cds_mean": 0.0034515983425080776
+  },
+  {
+   "design": "control",
+   "gene": "mScarlet",
+   "cage_sense": 0.005153026897460222,
+   "cage_area160": 0.06605079770088196,
+   "dnase_max": 0.17962460219860077,
+   "dnase_mean": 0.02304467000067234,
+   "atac_max": 0.2569902539253235,
+   "atac_mean": 0.021759508177638054,
+   "sc_atac_max": 0.31597596406936646,
+   "sc_atac_mean": 0.024320421740412712,
+   "methylation_max": 0.17716743052005768,
+   "methylation_mean": 0.008209615014493465,
+   "rna_cds_mean": 0.0004257812979631126
+  },
+  {
+   "design": "control",
+   "gene": "RFP3",
+   "cage_sense": 0.0055046542547643185,
+   "cage_area160": 0.024763459339737892,
+   "dnase_max": 0.16884346306324005,
+   "dnase_mean": 0.026983918622136116,
+   "atac_max": 0.4775579273700714,
+   "atac_mean": 0.0279386043548584,
+   "sc_atac_max": 0.6837714314460754,
+   "sc_atac_mean": 0.030853653326630592,
+   "methylation_max": 0.18107585608959198,
+   "methylation_mean": 0.005849204957485199,
+   "rna_cds_mean": 5.0682479923125356e-05
+  },
+  {
+   "design": "final",
+   "gene": "eGFP",
+   "cage_sense": 21.378875732421875,
+   "cage_area160": 78.54630279541016,
+   "dnase_max": 7.639151096343994,
+   "dnase_mean": 0.47916507720947266,
+   "atac_max": 7.0219879150390625,
+   "atac_mean": 0.2318546026945114,
+   "sc_atac_max": 12.408754348754883,
+   "sc_atac_mean": 0.3653119206428528,
+   "methylation_max": 0.08488232642412186,
+   "methylation_mean": 0.02328680083155632,
+   "rna_cds_mean": 0.8541863560676575
+  },
+  {
+   "design": "final",
+   "gene": "mScarlet",
+   "cage_sense": 0.5817331075668335,
+   "cage_area160": 1.5048085451126099,
+   "dnase_max": 1.397253155708313,
+   "dnase_mean": 0.12021362036466599,
+   "atac_max": 1.0618016719818115,
+   "atac_mean": 0.05774565413594246,
+   "sc_atac_max": 1.3588579893112183,
+   "sc_atac_mean": 0.07703237235546112,
+   "methylation_max": 0.3515503704547882,
+   "methylation_mean": 0.02982308156788349,
+   "rna_cds_mean": 1.0623962879180908
+  },
+  {
+   "design": "final",
+   "gene": "RFP3",
+   "cage_sense": 5.479079246520996,
+   "cage_area160": 26.762039184570312,
+   "dnase_max": 18.04981803894043,
+   "dnase_mean": 1.2199782133102417,
+   "atac_max": 10.022713661193848,
+   "atac_mean": 0.3758847415447235,
+   "sc_atac_max": 17.751487731933594,
+   "sc_atac_mean": 0.5865529775619507,
+   "methylation_max": 0.10208074748516083,
+   "methylation_mean": 0.01720946468412876,
+   "rna_cds_mean": 1.708958625793457
+  },
+  {
+   "design": "B_cage_rna",
+   "gene": "eGFP",
+   "cage_sense": 4.844232082366943,
+   "cage_area160": 9.409111976623535,
+   "dnase_max": 6.793219566345215,
+   "dnase_mean": 0.6900925636291504,
+   "atac_max": 11.846054077148438,
+   "atac_mean": 0.4514223337173462,
+   "sc_atac_max": 17.198022842407227,
+   "sc_atac_mean": 0.5719009041786194,
+   "methylation_max": 0.0854613333940506,
+   "methylation_mean": 0.017961177974939346,
+   "rna_cds_mean": 3.272730827331543
+  },
+  {
+   "design": "B_cage_rna",
+   "gene": "mScarlet",
+   "cage_sense": 0.5722723603248596,
+   "cage_area160": 1.2452322244644165,
+   "dnase_max": 0.7201495170593262,
+   "dnase_mean": 0.06853596121072769,
+   "atac_max": 1.0199769735336304,
+   "atac_mean": 0.07367630302906036,
+   "sc_atac_max": 1.1756702661514282,
+   "sc_atac_mean": 0.08501305431127548,
+   "methylation_max": 0.32785993814468384,
+   "methylation_mean": 0.01965913362801075,
+   "rna_cds_mean": 1.4821443557739258
+  },
+  {
+   "design": "B_cage_rna",
+   "gene": "RFP3",
+   "cage_sense": 0.12572357058525085,
+   "cage_area160": 0.4406246542930603,
+   "dnase_max": 1.685322880744934,
+   "dnase_mean": 0.09111208468675613,
+   "atac_max": 2.16625714302063,
+   "atac_mean": 0.08790840953588486,
+   "sc_atac_max": 2.314049005508423,
+   "sc_atac_mean": 0.09362973272800446,
+   "methylation_max": 0.3445854187011719,
+   "methylation_mean": 0.017160171642899513,
+   "rna_cds_mean": 0.18700803816318512
+  },
+  {
+   "design": "B_cage_rna_floor",
+   "gene": "eGFP",
+   "cage_sense": 3.237088680267334,
+   "cage_area160": 25.6919002532959,
+   "dnase_max": 7.283782005310059,
+   "dnase_mean": 0.8375430703163147,
+   "atac_max": 12.83251667022705,
+   "atac_mean": 0.5995187759399414,
+   "sc_atac_max": 15.989712715148926,
+   "sc_atac_mean": 0.7193484902381897,
+   "methylation_max": 0.06170376390218735,
+   "methylation_mean": 0.019554080441594124,
+   "rna_cds_mean": 4.111278057098389
+  },
+  {
+   "design": "B_cage_rna_floor",
+   "gene": "mScarlet",
+   "cage_sense": 325.7847900390625,
+   "cage_area160": 327.45672607421875,
+   "dnase_max": 43.60087203979492,
+   "dnase_mean": 1.8956207036972046,
+   "atac_max": 10.838871002197266,
+   "atac_mean": 0.7095245122909546,
+   "sc_atac_max": 18.133037567138672,
+   "sc_atac_mean": 1.0552247762680054,
+   "methylation_max": 0.04777421057224274,
+   "methylation_mean": 0.015097159892320633,
+   "rna_cds_mean": 8.259716987609863
+  },
+  {
+   "design": "B_cage_rna_floor",
+   "gene": "RFP3",
+   "cage_sense": 1.5381520986557007,
+   "cage_area160": 17.89554214477539,
+   "dnase_max": 8.890613555908203,
+   "dnase_mean": 0.8273094892501831,
+   "atac_max": 13.161796569824219,
+   "atac_mean": 0.5758456587791443,
+   "sc_atac_max": 17.699209213256836,
+   "sc_atac_mean": 0.6941878199577332,
+   "methylation_max": 0.08026070147752762,
+   "methylation_mean": 0.01358728390187025,
+   "rna_cds_mean": 0.7942116856575012
+  },
+  {
+   "design": "A_rna_cpg1",
+   "gene": "eGFP",
+   "cage_sense": 13.1402006149292,
+   "cage_area160": 20.897409439086914,
+   "dnase_max": 26.167720794677734,
+   "dnase_mean": 1.7044124603271484,
+   "atac_max": 14.848546981811523,
+   "atac_mean": 0.7188892364501953,
+   "sc_atac_max": 23.24616241455078,
+   "sc_atac_mean": 0.987726092338562,
+   "methylation_max": 0.05048102140426636,
+   "methylation_mean": 0.016988398507237434,
+   "rna_cds_mean": 5.29571008682251
+  },
+  {
+   "design": "A_rna_cpg1",
+   "gene": "mScarlet",
+   "cage_sense": 0.1087777316570282,
+   "cage_area160": 0.23108923435211182,
+   "dnase_max": 0.4281025230884552,
+   "dnase_mean": 0.05227099731564522,
+   "atac_max": 0.48351243138313293,
+   "atac_mean": 0.03342229500412941,
+   "sc_atac_max": 0.9521597027778625,
+   "sc_atac_mean": 0.04460516199469566,
+   "methylation_max": 0.35298600792884827,
+   "methylation_mean": 0.031762026250362396,
+   "rna_cds_mean": 0.030834421515464783
+  },
+  {
+   "design": "A_rna_cpg1",
+   "gene": "RFP3",
+   "cage_sense": 0.09839698672294617,
+   "cage_area160": 0.25841525197029114,
+   "dnase_max": 0.5486704707145691,
+   "dnase_mean": 0.062495358288288116,
+   "atac_max": 0.8443195819854736,
+   "atac_mean": 0.04644758254289627,
+   "sc_atac_max": 1.1327025890350342,
+   "sc_atac_mean": 0.05778009071946144,
+   "methylation_max": 0.37755903601646423,
+   "methylation_mean": 0.02348008006811142,
+   "rna_cds_mean": 0.10162529349327087
+  },
+  {
+   "design": "R_rna3_antienh_floor",
+   "gene": "eGFP",
+   "cage_sense": 0.14407166838645935,
+   "cage_area160": 1.0939350128173828,
+   "dnase_max": 0.49645403027534485,
+   "dnase_mean": 0.06206982210278511,
+   "atac_max": 0.6549857258796692,
+   "atac_mean": 0.05052340775728226,
+   "sc_atac_max": 0.8741587400436401,
+   "sc_atac_mean": 0.05867093801498413,
+   "methylation_max": 0.2592454254627228,
+   "methylation_mean": 0.023833567276597023,
+   "rna_cds_mean": 0.04687174782156944
+  },
+  {
+   "design": "R_rna3_antienh_floor",
+   "gene": "mScarlet",
+   "cage_sense": 0.06813555210828781,
+   "cage_area160": 2.7478373050689697,
+   "dnase_max": 0.5894008874893188,
+   "dnase_mean": 0.037077438086271286,
+   "atac_max": 0.6184147596359253,
+   "atac_mean": 0.02449502795934677,
+   "sc_atac_max": 0.7569478750228882,
+   "sc_atac_mean": 0.028483424335718155,
+   "methylation_max": 0.2559007704257965,
+   "methylation_mean": 0.0180616807192564,
+   "rna_cds_mean": 0.008921395987272263
+  },
+  {
+   "design": "R_rna3_antienh_floor",
+   "gene": "RFP3",
+   "cage_sense": 0.046306461095809937,
+   "cage_area160": 0.10744500160217285,
+   "dnase_max": 0.23727862536907196,
+   "dnase_mean": 0.03212544694542885,
+   "atac_max": 1.4834966659545898,
+   "atac_mean": 0.04214231297373772,
+   "sc_atac_max": 2.6633682250976562,
+   "sc_atac_mean": 0.04966095834970474,
+   "methylation_max": 0.2217836081981659,
+   "methylation_mean": 0.010088181123137474,
+   "rna_cds_mean": 0.01381869986653328
+  },
+  {
+   "design": "PC_rna_procap",
+   "gene": "eGFP",
+   "cage_sense": 40.06510925292969,
+   "cage_area160": 33.51776123046875,
+   "dnase_max": 25.80141258239746,
+   "dnase_mean": 1.130967617034912,
+   "atac_max": 11.482324600219727,
+   "atac_mean": 0.5017842650413513,
+   "sc_atac_max": 17.531431198120117,
+   "sc_atac_mean": 0.6844208240509033,
+   "methylation_max": 0.05809728801250458,
+   "methylation_mean": 0.017457405105233192,
+   "rna_cds_mean": 2.6049931049346924
+  },
+  {
+   "design": "PC_rna_procap",
+   "gene": "mScarlet",
+   "cage_sense": 0.27133986353874207,
+   "cage_area160": 0.4169570803642273,
+   "dnase_max": 0.603053629398346,
+   "dnase_mean": 0.06168748810887337,
+   "atac_max": 2.231687307357788,
+   "atac_mean": 0.047698769718408585,
+   "sc_atac_max": 2.517465591430664,
+   "sc_atac_mean": 0.061245281249284744,
+   "methylation_max": 0.336771160364151,
+   "methylation_mean": 0.023369790986180305,
+   "rna_cds_mean": 0.10193730890750885
+  },
+  {
+   "design": "PC_rna_procap",
+   "gene": "RFP3",
+   "cage_sense": 0.11497257649898529,
+   "cage_area160": 0.24171239137649536,
+   "dnase_max": 0.2264804244041443,
+   "dnase_mean": 0.03723858669400215,
+   "atac_max": 0.42613205313682556,
+   "atac_mean": 0.027881119400262833,
+   "sc_atac_max": 0.6182399988174438,
+   "sc_atac_mean": 0.034093860536813736,
+   "methylation_max": 0.32366037368774414,
+   "methylation_mean": 0.017971456050872803,
+   "rna_cds_mean": 0.05520500987768173
+  },
+  {
+   "design": "REAL",
+   "gene": "GAPDH",
+   "cage_sense": 10887.8134765625,
+   "dnase_max": 57.98405075073242,
+   "atac_max": 46.999755859375,
+   "sc_atac_max": 55.966392517089844,
+   "methylation_max": 0.05461493134498596
+  },
+  {
+   "design": "REAL",
+   "gene": "RPL13A",
+   "cage_sense": 1503.8653564453125,
+   "dnase_max": 105.25259399414062,
+   "atac_max": 39.53045654296875,
+   "sc_atac_max": 69.94175720214844,
+   "methylation_max": 0.06001514941453934
+  },
+  {
+   "design": "REAL",
+   "gene": "PGK1",
+   "cage_sense": 2093.324462890625,
+   "dnase_max": 58.04275131225586,
+   "atac_max": 36.65211486816406,
+   "sc_atac_max": 50.558135986328125,
+   "methylation_max": 0.05957088619470596
+  }
+ ],
+ "track_meta": {
+  "rna_seq": [
+   {
+    "i": 0,
+    "name": "EFO:0002067_polyA plus RNA-seq-encode-paired-end",
+    "strand": "+"
+   },
+   {
+    "i": 1,
+    "name": "EFO:0002067_polyA plus RNA-seq-encode-single-end",
+    "strand": "+"
+   },
+   {
+    "i": 2,
+    "name": "EFO:0002067_total RNA-seq-encode-paired-ended",
+    "strand": "+"
+   },
+   {
+    "i": 3,
+    "name": "EFO:0002067_total RNA-seq-encode-single-ended",
+    "strand": "+"
+   },
+   {
+    "i": 4,
+    "name": "EFO:0002067_polyA plus RNA-seq-encode-paired-end",
+    "strand": "-"
+   },
+   {
+    "i": 5,
+    "name": "EFO:0002067_polyA plus RNA-seq-encode-single-end",
+    "strand": "-"
+   },
+   {
+    "i": 6,
+    "name": "EFO:0002067_total RNA-seq-encode-paired-ended",
+    "strand": "-"
+   },
+   {
+    "i": 7,
+    "name": "EFO:0002067_total RNA-seq-encode-single-ended",
+    "strand": "-"
+   }
+  ],
+  "cage": [
+   {
+    "i": 0,
+    "name": "EFO:0002067_LQhCAGE-fantom",
+    "strand": "+"
+   },
+   {
+    "i": 1,
+    "name": "EFO:0002067_hCAGE-fantom",
+    "strand": "+"
+   },
+   {
+    "i": 2,
+    "name": "EFO:0002067_LQhCAGE-fantom",
+    "strand": "-"
+   },
+   {
+    "i": 3,
+    "name": "EFO:0002067_hCAGE-fantom",
+    "strand": "-"
+   }
+  ],
+  "dnase": [
+   {
+    "i": 0,
+    "name": "EFO:0002067_DNase-seq-encode-paired-ended",
+    "strand": "."
+   },
+   {
+    "i": 1,
+    "name": "EFO:0002067_DNase-seq-encode-single-ended",
+    "strand": "."
+   }
+  ],
+  "atac": [
+   {
+    "i": 0,
+    "name": "EFO:0002067_ATAC-seq-encode-paired-ended",
+    "strand": "."
+   },
+   {
+    "i": 1,
+    "name": "EFO:0002067_ATAC-seq-encode-single-ended",
+    "strand": "."
+   }
+  ],
+  "sc_atac": [
+   {
+    "i": 0,
+    "name": "EFO:0002067_EasySci-ATAC-easy_sci-nuclear",
+    "strand": "."
+   },
+   {
+    "i": 1,
+    "name": "EFO:0002067_SHARE-seq-cellranger-nuclear",
+    "strand": "."
+   },
+   {
+    "i": 2,
+    "name": "EFO:0002067_scATAC-seq 10X-bowtie2-nuclear",
+    "strand": "."
+   },
+   {
+    "i": 3,
+    "name": "EFO:0002067_scATAC-seq 10X-cellranger-nuclear",
+    "strand": "."
+   },
+   {
+    "i": 4,
+    "name": "EFO:0002067_sciATAC-seq-bowtie2-nuclear",
+    "strand": "."
+   }
+  ],
+  "methylation": [
+   {
+    "i": 0,
+    "name": "EFO:0002067_WGBS",
+    "strand": "."
+   },
+   {
+    "i": 1,
+    "name": "EFO:0002067_snmC-seq3",
+    "strand": "."
+   }
+  ]
+ }
+}

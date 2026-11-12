@@ -179,6 +179,96 @@ This is the strongest possible argument for the lab's existing external-filterin
 argues for one change: **filter on readouts that were not in the loss**, and treat the loss
 readouts as diagnostics only.
 
+
+## 10. AlphaGenome 2 (released 2026-11-11): the ladder result replicates
+
+AG2 is a conditional model trained on >100 M single-cell profiles across 68 tissues. It is
+**not** a drop-in upgrade for this project, for one reason that matters here:
+
+| | AG1 | AG2 |
+|---|---|---|
+| **PRO-cap** | 12 tracks | **removed** |
+| CAGE | 546 | 550 |
+| DNase | 305 | **385** |
+| ATAC | 167 | 179 |
+| scATAC | — | **731 (new)** |
+| methylation | — | **new** |
+| contact maps | 28 | **73** |
+| released weights | no | no |
+| input gradients | no | yes, but keyed to an annotated `gene_id` |
+
+So **everything about initiation direction in §3–§5 has to stay on AG1**, since AG2 cannot predict
+PRO-cap at all. And the new gradient endpoint does not unlock design: it takes a `gene_id`, not an
+arbitrary sequence, so it cannot be pointed at a synthetic construct. AlphaGenome remains a filter,
+not a design oracle, in both versions.
+
+What AG2 is good for is the question §7 left open, because expression is exactly where it improved.
+
+**It replicates the inversion, and the two independent models agree on every design**
+([fig16](../figures/fig16_ladder_three_models.png)):
+
+| design | Borzoi | AlphaGenome 1 | AlphaGenome 2 |
+|---|---|---|---|
+| control | ✓ | ✓ | ✓ |
+| **lab's `final`** | ✓ | **wrong** | **wrong** |
+| CAGE+RNA (arm B) | ✓ | ✓ | ✓ |
+| CAGE+RNA+floor | ✓ | wrong | wrong |
+| RNA+CpG | ✓ | wrong | wrong |
+| arm R | ✓ | wrong | wrong |
+| RNA+PRO-cap | ✓ | ✓ | ✓ |
+| **order wrong in** | **0 of 7** | **4 of 7** | **4 of 7** |
+
+Two models that share no training pipeline with Borzoi, and only partially with each other, return
+**identical verdicts on all seven designs**, and disagree with Borzoi on four. That is much harder
+to dismiss than one model's opinion, and it moves [correction 21](08-corrections.md) from
+"one model disagrees" to "the only two independent checks available both disagree."
+
+**They differ on severity, which matters for interpretation.** For `final`, AG1 gives
+0.081 / 0.340 / 1.849 (a 23× spread, badly inverted) while AG2 gives 0.854 / 1.062 / 1.709 (a 2×
+spread, mildly inverted). The target spread is 2.33×. So AG2's reading is that the three genes
+land at roughly the right *dynamic range* and in the wrong *order* — a milder failure than AG1
+suggested, but a failure of the thing being specified.
+
+One caveat on `PC_rna_procap`: its mScarlet and TagBFP values sit within ~10% of each other, so
+whether it counts as correctly ordered flips with the choice of averaging window. Treat it as
+"flat", not "correct".
+
+### DNase, now confirmed by a third model
+
+| design | Borzoi | AG1 | AG2 |
+|---|---|---|---|
+| lab's `final` | 3.70 / 0.37 / 5.65 | 1.30 / 3.56 / 13.38 | 7.64 / 1.40 / 18.05 |
+| CAGE+RNA+floor | 1.09 / 4.33 / 1.90 | 2.52 / 8.88 / 4.81 | 7.28 / **43.60** / 8.58 |
+| RNA+CpG | 3.05 / 0.13 / 0.12 | 11.50 / 0.96 / 0.45 | **26.17** / 0.43 / 0.55 |
+| RNA+PRO-cap | 2.43 / 0.18 / 0.10 | 4.34 / 0.42 / 0.23 | **25.80** / 0.60 / 0.23 |
+
+All three models rank the promoters within each design the same way, including the PRO-cap arm's
+one-good-two-dead pattern. Accessibility is now the single most robust readout in this project,
+across three unrelated models, and it remains the one no objective ever optimised.
+
+### New: the designed CpG islands are not predicted to be methylated
+
+[docs/11](11-what-cage-is-doing.md) found that CAGE optimisation works by installing CpG islands.
+An obvious worry follows: a methylated CpG island is a *silenced* one. AG2 predicts methylation
+directly, over the 600 bp upstream of each ATG:
+
+| | eGFP | mScarlet | TagBFP |
+|---|---|---|---|
+| CDS-only control (7–9 CpGs) | 0.004 | 0.003 | 0.003 |
+| lab's `final` (25/20/30 CpGs) | 0.019 | 0.018 | 0.013 |
+| RNA+CpG (23/29/27 CpGs) | 0.014 | 0.024 | 0.020 |
+| **real GAPDH / RPL13A / PGK1** | **0.006 / 0.009 / 0.015** | | |
+
+Every designed promoter sits in the same low range as real housekeeping CpG-island promoters.
+More CpGs does raise predicted methylation slightly (control 0.003 → designs 0.013–0.024), which
+is mechanically unsurprising since methylation requires CpGs to occur at, but nothing approaches a
+silenced level.
+
+**This is weak evidence and should not be leaned on.** Transgene silencing is driven by
+integration site, copy number and the host's silencing machinery — none of which a sequence model
+sees. It rules out the narrow worry that the designed sequence is *intrinsically* a methylation
+target. It says nothing about what happens to an integrated construct.
+
 ## 9. Limits
 
 - One AlphaGenome PRO-cap experiment (`ENCSR740IPL`, 12 tracks across 6 biosamples). Thin, and
@@ -189,3 +279,8 @@ readouts as diagnostics only.
   the claim is only that **agreement between independent models is weaker evidence than it looked,
   and disagreement is concentrated exactly on the optimised readouts.**
 - No wet-lab data. All of this is model-versus-model.
+- AlphaGenome 2 cannot predict PRO-cap, so no directionality claim here is checked by more
+  than ProCapNet and AG1. AG1 and AG2 also share a lineage, so their agreement on the
+  expression ladder is not fully independent evidence.
+- The methylation result is a prediction about naked sequence, not about an integrated
+  transgene, and should not be read as evidence against silencing.
