@@ -3,6 +3,10 @@
 > CAGE, PRO-cap, DNase and RNA from one sequence, and it overturns three claims below:
 > §3's verdict on the lab's `final` (corr 20), §5's 3-of-3 result (corr 20), and §6's
 > whole premise (corr 19). §1, §2 and §4 stand. Each affected section is flagged inline.
+>
+> **Followed up in [docs/14](14-dual-oracle.md).** The two-model design loop in §5 was extended
+> with CAGE and a per-gene floor on both initiation terms. That fixed its gene-abandonment
+> problem and left its overfitting problem exactly where it was.
 
 
 **The authors' questions.** (1) If we design with CAGE and RNA-seq, do we get

@@ -14,7 +14,7 @@ Status: complete for the questions below; two items still open (see [Open questi
 
 ## TL;DR
 
-Eighteen findings, in rough order of importance. Findings 12-18 answer the mechanistic question the authors actually posed and the two cross-model questions they asked next.
+Twenty findings, in rough order of importance. Findings 12-18 answer the mechanistic question the authors actually posed and the two cross-model questions they asked next. Findings 19-20 come from the final arm, which was built to fix a failure the earlier findings had diagnosed: it fixed the half that was an allocation problem and left the half that was an overfitting problem exactly where it was.
 > **Reading the numbers below.** Every "% of CAGE target" in this README is a **peak height** in a
 > 10-bin window at the TSS. The source deck's slide 50 implies the objective is an **area** over
 > ~160 bp. The choice matters: the lab's `final` is at 55% of target as a peak and **112% as an
@@ -41,6 +41,8 @@ Eighteen findings, in rough order of importance. Findings 12-18 answer the mecha
 | 16 | **A readout that was in the loss is a diagnostic, not evidence — and this is measurable.** Cross-model agreement in this project falls monotonically with how hard the objective pushed on the readout: DNase, never optimised, Spearman **+0.899**; PRO-cap, optimised in one arm, +0.648; CAGE, optimised in most arms, **+0.516**; the RNA ladder, optimised in every arm, reproduces in **2 of 7**. The same assay across two models agrees *worse* than two different assays within one model (AlphaGenome CAGE vs its own PRO-cap: **+0.953**). This also retracts the headline that the two initiation assays fundamentally disagree (correction 19) — that was Borzoi versus ProCapNet, not CAGE versus PRO-cap. The conclusion that external filtering is load-bearing survives; the stated reason was wrong. | [docs/13 §3, §8](docs/13-alphagenome-arbitration.md) |
 | 17 | **Borzoi's DNase predictions are confirmed by an independent model, so the accessibility conclusions stand.** Borzoi DNase vs AlphaGenome DNase across 21 design-gene pairs: Pearson **+0.872**, Spearman **+0.899**, including on the PRO-cap-designed locus Borzoi had never been optimised for. This closes the open caveat from docs/12 §6 — Borzoi was not blind to that sequence, it was right about it. Accessibility remains the one thing in this project that two unrelated models agree on, and it is the one readout no objective ever optimised. | [docs/13 §2](docs/13-alphagenome-arbitration.md) |
 | 18 | **AlphaGenome 2 cannot replace AlphaGenome 1 here, and neither can design.** AG2 (released 2026-11-11) **removes PRO-cap entirely**, so every directionality result in this repo has to stay on AG1 and ProCapNet. Its new input-gradient endpoint is keyed to an annotated `gene_id`, not an arbitrary sequence, so it cannot be pointed at a synthetic construct; with no released weights in either version, AlphaGenome is a filter and never a design oracle. What AG2 does add is a stronger expression model (which replicates finding 15), 385 DNase tracks against 305, scATAC, and **methylation** — and that last one clears a worry raised by finding 12: the designed CpG islands are predicted **unmethylated** (0.013–0.024) in the same range as real housekeeping promoters (0.006–0.015), so they are not intrinsic methylation targets. That says nothing about silencing of an integrated transgene, which no sequence model sees. | [docs/13 §10](docs/13-alphagenome-arbitration.md) |
+| 19 | **The arm the lab asked for is the best design in this project on the target they actually care about, and it wins by not abandoning any promoter.** `CAGE + RNA + PRO-cap`, with a per-gene floor on *both* initiation terms, puts two models that share no training data in one autograd graph. DNase at the **worst** of the three promoters, which is the honest statistic because a design that abandons a gene is unusable: **1.86** by Borzoi, **4.59** by AlphaGenome 1, **6.25** by AlphaGenome 2, against a previous best of 1.09 / 2.52 / 7.28 and the lab's `final` at 0.37 / 1.30 / 1.40. DNase is in no design loss anywhere here, so two of those three models are reporting on something they were never asked to produce. It wins on **evenness, not peak height**: AlphaGenome 1 DNase is 4.59 / 6.00 / 5.59 across the three promoters, where the CAGE+floor arm gives 2.52 / 8.88 / 4.81 and the PRO-cap-only arm gives 4.34 / 0.42 / 0.23. The same evenness shows in AlphaGenome's independent CAGE readout (664 / 1468 / 664, versus 38.5 / 1519.7 / 41.9 for the CAGE+floor arm) and in ProCapNet reads (46.3 / 82.7 / 99.3, versus 68.9 / 84.8 / 32.2). The price is RNA, down to 83.2% of target. **If the lab wants three usable promoters, this is the one to build** — but treat its directionality as unmeasured, per finding 20. | [docs/14](docs/14-dual-oracle.md) |
+| 20 | **Adding a second independent oracle to the loss does not fix oracle overfitting; both oracles get fooled together.** This was a direct prospective test of finding 16, and the hypothesis failed. With ProCapNet *and* Borzoi both in the objective, ProCapNet calls 2 of 3 promoters divergent and AlphaGenome 1, in no loss, calls **0 of 3** (antisense/sense 0.308 / 0.049 / 0.149 versus 3.295 / 1.215 / 0.475). The ranking inverts completely: the design that looks **most** divergent to the independent model is the lab's `final`, at 2 of 3, which never saw a PRO-cap track, while the two arms explicitly optimised for divergence come last. So finding 16 is not just a correlation across arms — it reproduces on demand. **The fix for oracle overfitting is not a better loss or more oracles in it; it is holding a model back.** Filter on readouts absent from the loss. | [docs/14](docs/14-dual-oracle.md) |
 
 ---
 
@@ -170,18 +172,48 @@ only one that gets both, which is probably what its much longer optimization bou
 
 ## Recommendations
 
-1. **Keep CAGE in the design loss.** It is computationally free, nothing substitutes for it, and
-   removing it costs the entire phenotype.
-2. **Drop CAGE from routine wet-lab validation. Use RNA-seq + ATAC.** Element-level Pearson coupling
-   is 0.94–0.998, though rank correlation is only ~0.8 and one of the three genes (mScarlet) would be
-   a false negative on ATAC alone. Assay CAGE once on two or three constructs to calibrate, then run
-   RNA-seq + ATAC thereafter.
-3. **Add an explicit antisense penalty.** Every arm here produced RNA+/RNA− of only 2.6–4.9 against
-   the lab design's 59.7. Specifying only RNA+ lets the optimizer build bidirectional promoters.
-4. **Design in the intended integration locus, not random padding.** Potentially a large and free
-   improvement (see finding 4).
-5. **Do not expect "add DNase to the loss" to fix accessibility.** It makes things worse.
+Ordered by how much they change what the lab does. Two recommendations that stood here in earlier
+versions have been removed because the findings behind them were retracted; they are listed at the
+bottom so the change is visible rather than silent.
 
+1. **Filter on readouts that were absent from the design loss.** The lab currently filters with
+   AlphaGenome on CAGE and RNA-seq, which are the two things Borzoi was optimised to produce.
+   Cross-model agreement in this project falls monotonically with how hard the objective pushed on
+   a readout (finding 16), and putting a second oracle in the loss does not fix it (finding 20).
+   **Filter on DNase and PRO-cap instead.** This is the single highest-value change and it costs
+   nothing.
+2. **If you want three usable promoters, build the dual-oracle arm** (finding 19,
+   [docs/14](docs/14-dual-oracle.md)). It is the only design here where no promoter is abandoned
+   according to two models that saw none of its objective. Treat its directionality as unmeasured.
+3. **A per-gene floor is not optional.** A loss that sums error over genes makes abandoning one
+   gene and overdelivering on two a legal solution, and the optimiser takes that trade whenever a
+   term is added. One one-sided hinge per gene at 60% of that gene's own target fixes it, and five
+   earlier negative results in [docs/10](docs/10-multitrack-chromatin.md) turned out to be
+   confounded by gene abandonment rather than by the terms under test (finding 14).
+4. **Keep CAGE in the design loss, but know why.** Asking for CAGE is not what creates a promoter;
+   two CAGE-free objectives beat the lab's design at eGFP. What CAGE plus a floor uniquely does is
+   create three promoters at once (finding 13). CAGE is required in the *loop* for a tooling
+   reason: AlphaGenome cannot be backpropagated, and of the differentiable oracles Borzoi has zero
+   PRO-cap tracks out of 7,611.
+5. **Run flow cytometry before anything else.** Models disagree about whether the 7/5/3 ladder was
+   achieved at all (finding 15, [correction 21](docs/08-corrections.md)). Flow cytometry at
+   457/507/594 nm is the one measurement no model gets a vote on, and the three fluorophores give
+   three clean channels. Judge on the **2.33 : 1.67 : 1 ratio**, not the absolute 28/20/12.
+6. **Pad with real genomic sequence, not generated sequence.** Worth up to 437x in predicted CAGE,
+   and it is free (finding 4). Still unanswered: which one does the lab's pipeline currently use?
+7. **Do not expect "add DNase to the loss" to fix accessibility.** It makes things worse.
+
+**Withdrawn from this list:**
+
+- *"Drop CAGE from wet-lab validation, use RNA-seq + ATAC, element-level Pearson is 0.94–0.998."*
+  Retracted by [corrections 7 and 8](docs/08-corrections.md). That correlation was dynamic-range
+  inflation across designs that differ 800-fold; per-base within a promoter it is +0.351 / −0.041 /
+  +0.169. ATAC is not a cheap surrogate for CAGE. Separately, CAGE is not needed in the wet lab for
+  a different and better reason: flow cytometry and PRO-cap answer the questions that matter.
+- *"Add an explicit antisense penalty."* Retracted by [correction 18](docs/08-corrections.md). The
+  Borzoi orientation index it rested on summed bins running *downstream* of the TSS while divergent
+  initiation peaks 25–250 bp *upstream*, so it was blind to the phenomenon by construction. The
+  four arms built on it (O, Q, S, T) did not produce unidirectional promoters.
 ---
 
 ## Repository layout
@@ -200,14 +232,18 @@ borzoi-cage-necessity/
 │   ├── 07-conclusions.md         synthesis and recommendations
 │   ├── 08-corrections.md         every claim retracted during this work, and why
 │   ├── 09-methods.md             full reproducible methods
-│   └── 10-multitrack-chromatin.md multi-track objectives, promoter identity, random loci
-├── figures/                      5 figures (PNG)
+│   ├── 10-multitrack-chromatin.md multi-track objectives, promoter identity, random loci
+│   ├── 11-what-cage-is-doing.md  the CpG-island mechanism, and its refutation
+│   ├── 12-procap-crossmodel.md   ProCapNet validation (superseded in part by 13)
+│   ├── 13-alphagenome-arbitration.md  AlphaGenome 1 and 2 as independent arbiters
+│   └── 14-dual-oracle.md         two initiation oracles in one loss
+├── figures/                      18 figures (PNG)
 ├── data/
 │   ├── README.md                 index of every data file and its origin
-│   ├── sequences/                lab originals + control + my 12 designed arms (FASTA)
-│   ├── predictions/              all raw Borzoi outputs (JSON)
+│   ├── sequences/                lab originals + control + designed arms (FASTA)
+│   ├── predictions/              raw Borzoi, ProCapNet and AlphaGenome outputs (JSON)
 │   ├── context/                  the 524 kb AAVS1 flank, context metadata
-│   └── tables/                   11 machine-readable result tables (CSV)
+│   └── tables/                   15 machine-readable result tables (CSV)
 └── code/                         Modal app + all analysis scripts
 ```
 
@@ -225,7 +261,11 @@ borzoi-cage-necessity/
 `table8_track_coupling.csv` | CAGE-vs-surrogate Pearson **and** Spearman, per gene, with value ranges |
 `table9_procapnet_motifs.csv` | ProCapNet K562 initiation-motif hits per design, gene and motif |
 `table10_multitrack_arms.csv` | all 21 designs × CAGE/RNA/chromatin, with CAGE scored **both** as area and as peak, plus initiation breadth, H3K4me1 and promoter character. Regenerate with `code/make_table10_multitrack.py` |
-`table11_random_loci.csv` | 11 real genomic contexts × 3 designs, with context GC and CpG |
+`table11_random_loci.csv` | 11 real genomic contexts × 3 designs, with context GC and CpG
+`table12_procap.csv` | ProCapNet profiles for every design, gene, real promoter and negative window
+`table13_alphagenome.csv` | AlphaGenome 1 vs ProCapNet vs Borzoi, with divergence verdicts and TSS precision
+`table14_alphagenome2.csv` | Borzoi vs AG1 vs AG2 on the RNA ladder, DNase, ATAC, scATAC and methylation
+`table15_dual_oracle.csv` | the dual-oracle arm across all four models, per gene |
 
 ---
 

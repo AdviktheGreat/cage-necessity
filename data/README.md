@@ -19,7 +19,7 @@ RFP-family protein. See [../docs/02-sequence-analysis.md](../docs/02-sequence-an
 
 | File | Context | Contents |
 |---|---|---|
-`scores_aavs1.json` | AAVS1 | 15 designs × 19 tracks × 3 genes. **The headline result.** |
+`scores_aavs1.json` | AAVS1 | 36 designs × 19 tracks × 3 genes. **The headline result.** |
 `scores_loci.json` | 11 real loci | 3 designs × 11 genomic contexts; tests random-genomic padding |
 `arms_aavs1.json` | AAVS1 | 9 perturbation arms (transplant/scramble), 10 tracks |
 `arms_N.json` | all-N | same 9 arms |
@@ -27,7 +27,11 @@ RFP-family protein. See [../docs/02-sequence-analysis.md](../docs/02-sequence-an
 `flank_test.json` | 6 contexts | 3 designs × 6 flanking contexts |
 `ism_aavs1_rep0.json` | AAVS1 | 5,400 single-base mutants, 3 readouts each |
 `randomflank_means.json.gz` | random | **superseded.** Full 5-track × 6,144-bin profiles, 3 arms |
-`randomflank_means_all.json.gz` | random | **superseded.** Same for all 9 perturbation arms |
+`randomflank_means_all.json.gz` | random | **superseded.** Same for all 9 perturbation arms
+`procap_profiles.json` | AAVS1 | ProCapNet base-resolution profiles: 10 designs × 3 genes, 3 real promoters, 8 negative windows. **`fwd`/`rev` are probabilities — reads = `count` × mass in window.** |
+`procap_scores.json` | AAVS1 | ProCapNet scalar summaries, 111 rows over 39 designs |
+`alphagenome_summary.json` | AAVS1 | AlphaGenome 1: 8 designs + 3 real promoters × CAGE, PRO-cap, DNase, ATAC, RNA. In no design loss. |
+`alphagenome2_summary.json` | AAVS1 | AlphaGenome 2 (API-only, no PRO-cap): adds scATAC and methylation. `columns_used` records the CAGE track, see [docs/13 §10](../docs/13-alphagenome-arbitration.md). | |
 
 The two `randomflank_*` files are retained for the record only. They were computed with
 composition-matched random padding, which [../docs/08-corrections.md](../docs/08-corrections.md)
@@ -48,10 +52,11 @@ seed (20261027) and fetches them from the UCSC REST API.
 
 ## `tables/`
 
-Eleven CSV tables, documented in the [README](../README.md#result-tables).
+Fifteen CSV tables, documented in the [README](../README.md#result-tables).
 `table8_track_coupling.csv` is regenerated from `table2` by `code/analyze_track_coupling.py`;
 `table9_procapnet_motifs.csv` by `code/analyze_procapnet_motifs.py`;
-`table11_random_loci.csv` by `code/make_table11_loci.py`.
+`table11_random_loci.csv` by `code/make_table11_loci.py`;
+`table10_multitrack_arms.csv` by `code/make_table10_multitrack.py`, which iterates a hardcoded description map — **a new design arm must be added there or it will be scored but not tabulated**.
 
 ## Coordinate conventions
 

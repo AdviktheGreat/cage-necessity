@@ -1,5 +1,9 @@
 # 13 — AlphaGenome as an arbiter: what survived, what did not
 
+> **Followed up in [docs/14](14-dual-oracle.md).** The oracle overfitting diagnosed in §7 was
+> tested directly, by putting a second independent initiation oracle into the design loss. It did
+> not help, which turns §7's correlation into a result that reproduces on demand.
+
 [docs/12](12-procap-crossmodel.md) used ProCapNet to judge Borzoi-designed loci and found the
 two models disagreed sharply. That left the central question unresolved: was the disagreement a
 fact about CAGE and PRO-cap, or an artifact of comparing two unrelated models?

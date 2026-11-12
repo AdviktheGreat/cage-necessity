@@ -679,7 +679,8 @@ def procap_profiles():
     for fp in sorted(glob.glob("/data/out/design_*.json")):
         d = json.load(open(fp))
         if d["arm"] in ("A_rna", "B_cage_rna", "J_cage_rna_chrrna", "B_cage_rna_floor",
-                        "R_rna3_antienh_floor", "A_rna_cpg1", "PC_rna_procap"):
+                        "R_rna3_antienh_floor", "A_rna_cpg1", "PC_rna_procap",
+                        "D_cage_rna_procap_floor"):
             cand[d["arm"]] = d["design"]
     for nm, dsn in cand.items():
         out["designs"][nm] = {}
@@ -811,9 +812,137 @@ def design_procap(arm="PC_rna_procap", flank="aavs1", init="control", max_iter=6
     return res
 
 
+@app.function(image=pcimage, gpu="A100-80GB", volumes={"/data": data, "/cache": hfc},
+              timeout=7200)
+def design_dual(arm="D_cage_rna_procap_floor", flank="aavs1", init="control", max_iter=600,
+                l=1e-3, lr=0.5, batch_size=1, rep=0, seed=0,
+                w_sense=0.5, w_anti=0.5, w_cnt=0.1, strength=10.0):
+    """Borzoi CAGE + Borzoi RNA + ProCapNet PRO-cap, with a per-gene floor on both
+    initiation terms.
+
+    This is the structural fix for the two failures the project actually found.
+    Correction 20: the PRO-cap-only arm overfits the oracle inside its own loss,
+    reading 3 of 3 divergent promoters to ProCapNet and 1 of 3 to AlphaGenome.
+    The floor result: every CAGE-free arm builds one good promoter and abandons
+    two, because a summed loss makes that trade legal. Here two initiation
+    oracles that share no training data have to agree at the same position, and
+    a floor on each stops the optimiser buying agreement at one gene by
+    sacrificing another. CAGE is asked for as a 5-bin area (correction 11).
+    """
+    import torch, numpy as np, math
+    from ledidi import Ledidi
+    global AREA_CAGE
+    AREA_CAGE = True
+
+    bz = load(rep)
+    for p in bz.parameters(): p.requires_grad_(False)
+    pc = pc_load()
+    for p in pc.parameters(): p.requires_grad_(False)
+
+    track_names = ["CAGE+", "RNA+"]
+    tids = [TR[t] for t in track_names]
+    wv = [OBJ["B_cage_rna"][t] for t in track_names]
+    w = torch.tensor(wv, dtype=torch.float32).cuda()[None, :, None]
+
+    spans = [(DESIGN_START + a - 128 - 1057, DESIGN_START + a - 128 - 1057 + PC_IN)
+             for a, _ in GENES.values()]
+    lct = [PC_TGT_LOGCOUNT[g] for g in GENES]
+    cbins = [(a - 128) // BINW for a, _ in GENES.values()]
+    # The CAGE floor has to live in the same sqrt(weight)-scaled space the Head emits.
+    cfloors = [FLOOR_FRAC * TGT_CAGE[g] * (float(wv[0]) ** 0.5) for g in GENES]
+
+    class Head(torch.nn.Module):
+        def __init__(self): super().__init__(); self.pc_terms = None
+        def forward(self, X):
+            terms = []
+            for s, e in spans:
+                prof, cnt = pc(X[:, :, s:e])
+                flat = torch.log_softmax(prof.reshape(prof.shape[0], -1), dim=-1)
+                terms.append((cnt[:, 0], flat.reshape(prof.shape)))
+            self.pc_terms = terms
+            with torch.autocast("cuda", dtype=torch.bfloat16):
+                y = bz(X)
+            return y[:, tids, BIN0:BIN0 + NB].float() * w.sqrt()
+
+    head = Head().cuda().eval()
+
+    class DualOracleFloor(torch.nn.Module):
+        """CAGE+RNA MSE, a per-gene CAGE area floor, and per-gene PRO-cap hinges."""
+
+        def __init__(self, h):
+            super().__init__()
+            self._h = [h]
+            self.ls, self.la = math.log(PC_TGT_SENSE), math.log(PC_TGT_ANTI)
+            self.register_buffer("cfl", torch.tensor(cfloors, dtype=torch.float32))
+
+        def forward(self, y_pred, y_true):
+            mse = ((y_pred - y_true) ** 2).mean()
+            cpen = y_pred.new_zeros(())
+            for i, tb in enumerate(cbins):
+                got = y_pred[:, 0, tb:tb + 5].sum(-1)
+                cpen = cpen + torch.relu(self.cfl[i] - got).pow(2).mean()
+            ppen = y_pred.new_zeros(())
+            for i, (lc, lp) in enumerate(self._h[0].pc_terms):
+                b = lp.shape[0]
+                sense = torch.logsumexp(lp[:, 0, PC_SENSE[0]:PC_SENSE[1]].reshape(b, -1), -1)
+                anti = torch.logsumexp(lp[:, 1, PC_ANTI[0]:PC_ANTI[1]].reshape(b, -1), -1)
+                ppen = ppen + w_sense * torch.relu(self.ls - sense).pow(2).mean()
+                ppen = ppen + w_anti * torch.relu(anti - self.la).pow(2).mean()
+                ppen = ppen + w_cnt * torch.relu(lct[i] - lc).pow(2).mean()
+            return mse + strength * cpen / len(cbins) + ppen / len(spans)
+
+    init_design = json.load(open("/data/ctx/designs.json"))[init]
+    X = torch.from_numpy(ohe_np(build(init_design, flank)))[None].cuda()
+    mask = np.ones(524288, dtype=bool)
+    cds = set()
+    for a, z in GENES.values(): cds.update(range(a, z))
+    for p in range(DLEN):
+        if p not in cds: mask[DESIGN_START + p] = False
+    n_mut = int((~mask).sum())
+
+    y_bar = torch.from_numpy(target_profiles(track_names))[None].cuda() * w.sqrt()
+    loss_fn = DualOracleFloor(head).cuda()
+
+    torch.manual_seed(seed)
+    led = Ledidi(head, shape=(4, 524288), output_loss=loss_fn,
+                 input_mask=torch.from_numpy(mask).cuda(), l=l, lr=lr,
+                 batch_size=batch_size, max_iter=max_iter,
+                 early_stopping_iter=max_iter, report_iter=50, verbose=True,
+                 random_state=seed).cuda()
+    t0 = time.time()
+    out = led.fit_transform(X, y_bar).detach()
+    dt = time.time() - t0
+
+    with torch.no_grad():
+        yy = head(out.cuda())
+        err = ((yy - y_bar) ** 2).mean(dim=(1, 2))
+        best = int(err.argmin())
+    idx = out[best].cpu().numpy().argmax(axis=0)
+    seq = np.frombuffer(b"ACGT", dtype=np.uint8)[idx].tobytes().decode()
+    dsn = seq[DESIGN_START:DESIGN_START + DLEN]
+    n_edits = sum(1 for i in range(DLEN) if dsn[i] != init_design[i])
+
+    label = arm
+    if max_iter != 600: label += f"_i{max_iter}"
+    res = {"arm": label, "flank": flank, "init": init, "seconds": round(dt, 1),
+           "n_mutable": n_mut, "n_edits": n_edits, "max_iter": max_iter, "l": l, "lr": lr,
+           "w_sense": w_sense, "w_anti": w_anti, "w_cnt": w_cnt, "strength": strength,
+           "tracks": ["CAGE+", "RNA+", "PROcap_sense", "PROcap_antisense", "PROcap_count"],
+           "final_output_mse": float(err[best])}
+    with open(f"/data/out/design_{label}.json", "w") as f:
+        json.dump({**res, "design": dsn}, f)
+    data.commit()
+    return res
+
+
 @app.local_entrypoint()
 def main(step: str="arms", flank: str="aavs1", rep: int=0, arm: str="B_cage_rna",
          max_iter: int=600, l: float=1e-3, lr: float=0.5):
+    if step=="dualdesign":
+        for a in arm.split(","):
+            print(json.dumps(design_dual.remote(arm=a, flank=flank, max_iter=max_iter,
+                                                l=l, lr=lr, rep=rep)))
+        return
     if step=="procapdesign":
         for a in arm.split(","):
             print(json.dumps(design_procap.remote(arm=a, flank=flank, max_iter=max_iter, l=l, lr=lr, rep=rep)))
