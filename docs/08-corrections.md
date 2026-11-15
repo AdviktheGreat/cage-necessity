@@ -1,7 +1,9 @@
 # 08. Corrections log
 
 Claims made during this work that later proved wrong, and why. Kept because the reason for each
-error is methodologically instructive. Corrections 1-5 all trace to one bad choice, the synthetic
+error is methodologically instructive. **Twenty-two corrections.**
+Correction 22 retracts a finding published three days earlier and, in doing so, confirms a claim 
+in the source deck that I had been treating as unverified. Corrections 1-5 all trace to one bad choice, the synthetic
 flanking padding. Corrections 7-9 share a different root: measuring only what was being optimized,
 and declaring success before checking anything outside the objective.
 
@@ -567,6 +569,52 @@ optimised in most arms, +0.516; the RNA ladder, optimised in every arm, reproduc
 findings in this repo that survived independent checking — DNase peaks tracking
 promoter quality, and chromatin marks being consequences rather than causes — are
 precisely the two measured on readouts no objective touched.
+
+### 22. "The dual-oracle arm is the best design on DNase at promoters" — retracted, the metric rewarded opening the whole locus
+
+**Claimed:** finding 19, three days ago. The dual-oracle arm is the best design in this project on
+the lab's primary target, because DNase at the worst of its three promoters reads 1.86 / 4.59 / 6.25
+across Borzoi, AlphaGenome 1 and AlphaGenome 2, against the lab's `final` at 0.37 / 1.30 / 1.40.
+
+**Actually:** those numbers are right and the conclusion drawn from them is wrong. "DNase at the
+worst promoter" is an absolute peak height, and a design can satisfy it by raising accessibility
+*everywhere* rather than by building three promoters. Plotting the whole construct instead of
+sampling three windows ([fig19](../figures/fig19_designed_vs_heldout.png)) shows exactly that: the
+dual arm's DNase is elevated along its entire length.
+
+Measured against background on the **67% of the construct that no objective term touched** (outside
+all CDSs and outside the ±1,057 bp ProCapNet windows):
+
+| design | AG1 height | AG1 **specificity** | AG2 height | AG2 **specificity** |
+|---|---|---|---|---|
+| CDS-only control | 0.15 | 11.1× | 0.14 | 8.3× |
+| **lab's `final`** | 1.30 | **41.8×** | 1.40 | **36.3×** |
+| CAGE+RNA | 0.50 | 9.0× | 0.72 | 9.5× |
+| CAGE+RNA+floor | 2.52 | 15.2× | 7.28 | 33.8× |
+| RNA+PRO-cap | 0.23 | 7.1× | 0.23 | 4.7× |
+| dual-oracle | **4.59** | 12.5× | **5.74** | 19.3× |
+
+The lab's `final` is the **most promoter-specific design in this project**, by all three models, by a
+wide margin. It is top in 7 of 9 model × window combinations (±200, ±300, ±500 bp).
+
+**Why this correction matters more than most.** The request was *"the main thing we want to see is
+dnase peaks at promoters."* A peak is local by definition; my metric could not see locality. Worse,
+**the lab's own Figure 4 already drew exactly this distinction** — it describes CAGE-alone as
+"runaway, broad peaks, mostly off-target" and CAGE+RNA as "peaks **at** the designed positions."
+The distinction I failed to measure was already stated in the source material. So this correction
+also turns into an independent confirmation of the lab's Figure 4 claim, from two models that had no
+part in the design.
+
+**The honest replacement, which is finding 1 in the current README.** There are two axes, and no
+design in this project wins both. The Pareto front is three designs: the lab's `final` (most local),
+`B_cage_rna_floor` (the balance, and best overall by AG2), and the dual-oracle arm (strongest but
+least local). My recommendation changes accordingly, from the dual arm to `B_cage_rna_floor`.
+
+**Species of error:** (c), a metric evaluated over a window that excludes the phenomenon. This is
+the **second** time in this project, after [correction 18](#18), where the orientation index summed
+bins running downstream of the TSS while divergent initiation peaks upstream. Both times a window
+chosen to isolate a signal also hid the thing that would have falsified the claim. The general fix
+is the one that caught it here: plot the whole object before reducing it to a statistic.
 
 ## The lesson
 

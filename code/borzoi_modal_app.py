@@ -935,9 +935,48 @@ def design_dual(arm="D_cage_rna_procap_floor", flank="aavs1", init="control", ma
     return res
 
 
+@app.function(image=image, gpu="A100-80GB", volumes={"/data": data, "/cache": hfc},
+              timeout=3600)
+def profiles(designs="control,final,B_cage_rna,B_cage_rna_floor,PC_rna_procap,D_cage_rna_procap_floor",
+             flank="aavs1", rep=0):
+    """Dump whole-construct Borzoi profiles so predictions can be plotted against the
+    requested pattern, which is how the source deck presents its results.
+
+    Everything else in this repo reduces a profile to scalars. The deck plots signal
+    across the construct with the desired pattern overlaid, and that view is what makes
+    'this readout was in the loss and that one was not' legible.
+    """
+    import torch, numpy as np
+    bz = load(rep)
+    rows = ["CAGE+", "CAGE-", "RNA+", "DNase", "H3K4me3"]
+    tids = [TR[t] for t in rows]
+    base = json.load(open("/data/ctx/designs.json"))
+    out = {}
+    for name in designs.split(","):
+        dsn = base[name] if name in base else \
+            json.load(open(f"/data/out/design_{name}.json"))["design"]
+        assert len(dsn) == DLEN, (name, len(dsn))
+        X = torch.from_numpy(ohe_np(build(dsn, flank)))[None].cuda()
+        with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+            y = bz(X)
+        out[name] = y[0, tids, BIN0:BIN0 + NB].float().cpu().numpy()
+        print(name, "done", flush=True)
+    global AREA_CAGE
+    AREA_CAGE = True
+    np.savez_compressed("/data/out/borzoi_profiles.npz",
+                        tracks=np.array(rows),
+                        target_cage=target_profiles(["CAGE+"])[0],
+                        target_rna=target_profiles(["RNA+"])[0],
+                        **out)
+    data.commit()
+    return {"designs": list(out), "tracks": rows, "shape": list(out[list(out)[0]].shape)}
+
+
 @app.local_entrypoint()
 def main(step: str="arms", flank: str="aavs1", rep: int=0, arm: str="B_cage_rna",
          max_iter: int=600, l: float=1e-3, lr: float=0.5):
+    if step=="profiles":
+        print(json.dumps(profiles.remote(flank=flank, rep=rep), indent=1)); return
     if step=="dualdesign":
         for a in arm.split(","):
             print(json.dumps(design_dual.remote(arm=a, flank=flank, max_iter=max_iter,

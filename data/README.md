@@ -32,6 +32,8 @@ RFP-family protein. See [../docs/02-sequence-analysis.md](../docs/02-sequence-an
 `procap_scores.json` | AAVS1 | ProCapNet scalar summaries, 111 rows over 39 designs |
 `alphagenome_summary.json` | AAVS1 | AlphaGenome 1: 8 designs + 3 real promoters × CAGE, PRO-cap, DNase, ATAC, RNA. In no design loss. |
 `alphagenome2_summary.json` | AAVS1 | AlphaGenome 2 (API-only, no PRO-cap): adds scATAC and methylation. `columns_used` records the CAGE track, see [docs/13 §10](../docs/13-alphagenome-arbitration.md). | |
+`borzoi_profiles.npz` | AAVS1 | **Whole-construct Borzoi profiles**, 6 designs x 5 tracks x 624 bins, plus the requested CAGE and RNA patterns. Input for [fig19](../figures/fig19_designed_vs_heldout.png); plotting these is what caught [correction 22](../docs/08-corrections.md). |
+`dnase_traces.npz` | AAVS1 | AlphaGenome 1 and 2 DNase at 1 bp across the construct, 6 designs. Keys `ag1|<design>` / `ag2|<design>`; add `margin`=1000 to design coordinates. |
 
 The two `randomflank_*` files are retained for the record only. They were computed with
 composition-matched random padding, which [../docs/08-corrections.md](../docs/08-corrections.md)
@@ -52,7 +54,7 @@ seed (20261027) and fetches them from the UCSC REST API.
 
 ## `tables/`
 
-Fifteen CSV tables, documented in the [README](../README.md#result-tables).
+Sixteen CSV tables, documented in the [README](../README.md#result-tables).
 `table8_track_coupling.csv` is regenerated from `table2` by `code/analyze_track_coupling.py`;
 `table9_procapnet_motifs.csv` by `code/analyze_procapnet_motifs.py`;
 `table11_random_loci.csv` by `code/make_table11_loci.py`;
