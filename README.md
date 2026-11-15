@@ -24,7 +24,7 @@ stated ideal: *"ideally we don't want to have to tell the model where we want DN
 |---|---|---|
 | **Do we get DNase peaks at promoters?** | **Yes, and your own design is the best at it.** `final` puts accessibility 41.8× above untouched background, versus 12.5× for the best thing I built. | [§1](#1-the-primary-target-dnase-peaks-at-promoters) |
 | Design on **CAGE + RNA** → do we get PRO-cap? | Weak and inconsistent. ~90× over background but ~9× below real housekeeping promoters. | [§2](#2-designing-on-cage--rna-does-pro-cap-follow) |
-| Design on **RNA + PRO-cap** → do we get CAGE and DNase? | No. CAGE 14% of target; DNase at one promoter of three. | [§3](#3-designing-on-rna--pro-cap-do-cage-and-dnase-follow) |
+| Design on **RNA + PRO-cap** → do we get CAGE and DNase? | No. CAGE 14% of target; DNase at one promoter of three. **But PRO-cap is not a weaker CAGE** — it fails as an *objective* and beats CAGE as a *check*. | [§3](#3-designing-on-rna--pro-cap-do-cage-and-dnase-follow) |
 | Can we avoid specifying DNase? | **Yes, but you cannot get there from RNA alone.** Specify initiation; accessibility follows. | [§4](#4-the-stated-ideal-not-naming-dnase) |
 | Is the 7 : 5 : 3 ladder achieved? | **Unresolved.** Borzoi says yes for 7 of 7 designs; two independent models say 3 of 7. | [§5](#5-what-does-not-survive-an-independent-model) |
 | Why does CAGE work? | It installs CpG islands. But that is only half of what a promoter needs. | [§6](#6-why-cage-works-and-why-that-is-only-half-the-story) |
@@ -129,6 +129,34 @@ I also built the arm that was supposed to fix this: CAGE + RNA + PRO-cap with a 
 both initiation terms, putting two independent initiation oracles in one loss. **It did not work.**
 ProCapNet calls 2 of 3 promoters divergent; AlphaGenome, in no loss, calls 0 of 3. Two oracles in
 the loss get fooled together. [docs/14](docs/14-dual-oracle.md).
+
+### What PRO-cap is and is not good for
+
+The two sections above both judge PRO-cap as a *design objective*, and it loses on that test.
+That is easy to misread as "PRO-cap is a weaker CAGE." It is not. PRO-cap has two roles here and
+they get **opposite verdicts**, so stating them separately:
+
+| | verdict | why |
+|---|---|---|
+| **In the design loss**, as a CAGE substitute | **fails** | Borzoi has **zero** PRO-cap tracks of 7,611, so the only differentiable PRO-cap model is ProCapNet, which sees 2,114 bp. A narrow oracle against 17,847 mutable positions gets overfit: ProCapNet says 3 of 3, AlphaGenome says 1 of 3 ([correction 20](docs/08-corrections.md)). |
+| **Out of the loss**, as a validation readout | **beats CAGE** | Cross-model agreement is **+0.648** for PRO-cap against **+0.516** for CAGE, precisely because almost nothing optimised it. It also measures TSS position at 1 bp and strand natively, which 32 bp CAGE bins cannot. |
+
+**The failure is about the models that exist, not about what PRO-cap measures.** Three things only
+PRO-cap found, all of which survived independent checking:
+
+1. **Position.** The offsets above: −4 / +17 / +0 bp against CAGE-designed promoters scattering
+   −172 to +148.
+2. **Shape.** Real promoters put initiation in a single sharp spike; every design here spreads it
+   over 100–200 bp. Borzoi's CAGE is binned at 32 bp and cannot see this.
+3. **Absolute calibration.** The best designs reach 55–61 reads where GAPDH, RPL13A and PGK1 reach
+   554, 1239 and 572 — so the designed promoters are roughly **9× weaker than a real housekeeping
+   promoter**. No CAGE number revealed that.
+
+So the division of labour is the opposite of a substitution: **CAGE stays in the loss** because it
+is the only differentiable initiation signal covering a whole locus and the only route to three
+promoters at once; **PRO-cap stays out of the loss and becomes the check**, in AlphaGenome and in
+the wet lab. CAGE is the assay you do *not* need at the bench.
+
 
 ---
 
